@@ -11,8 +11,7 @@
     "ALLOWED_GITHUB_LOGIN": "jlawcordova",
     "ATPROTO_HANDLE": "jlawcordova.com",
     "PORTFOLIO_REPO": "jlawcordova/jlawcordova.github.io",
-    // Public origin of this Worker, no trailing slash. Replace with the
-    // workers.dev URL (or custom domain) after the first deploy.
-    "PUBLIC_URL": "http://localhost:8788"
+    // Public origin of this Worker, no trailing slash.
+    "PUBLIC_URL": "https://jlawcordova-mcp.jlawcordova.workers.dev"
   }
 }
