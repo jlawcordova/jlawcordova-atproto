@@ -1,6 +1,7 @@
 # Intent: Accomplishments on AT Protocol
 
-> Status: v0.3 — Owner: J. Law Cordova — Date: 2026-10-01
+> Status: **Closed** (v0.3) — Owner: J. Law Cordova — Date: 2026-10-01 —
+> Closed: 2026-10-01
 
 ## Why
 
@@ -143,13 +144,15 @@ page and sort; they do not rely on `listRecords` order.
 
 None. Details are in [`spec.md`](spec.md).
 
-## Next steps in the AI-native SDLC
+## AI-native SDLC
+
+All steps are done and the intent is closed.
 
 1. **Intent** (this document) — done.
 2. **Spec** — Lexicon JSON, MCP tool contracts (inputs/outputs/errors), auth
-   design, and acceptance tests in a `spec.md`.
-3. **Plan** — break the spec into small, verifiable tasks.
-4. **Implement & verify** — build against the spec with tests, including an
-   end-to-end check against a real PDS.
-5. **Deploy & operate** — ship the server and confirm the success criteria
-   above.
+   design, and acceptance tests in [`spec.md`](spec.md) — done.
+3. **Plan** — the build order in [`spec.md`](spec.md#8-build-order) — done.
+4. **Implement & verify** — built against the spec with tests, including an
+   end-to-end check against a real PDS — done.
+5. **Deploy & operate** — server shipped and the success criteria above
+   confirmed — done.

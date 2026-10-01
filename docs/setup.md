@@ -1,6 +1,6 @@
 # Setup: accounts, secrets, and deploy
 
-The manual setup behind step 3 of the build order in [`spec.md`](../spec.md)
+The manual setup behind step 3 of the build order in [`spec.md`](intents/2026-10-kickoff/spec.md)
 §8: the KV namespace, the deploy, and the secrets and OAuth Apps. Part A
 needs no code and can be done now. Part B needs the Worker from step 2.
 
