@@ -12,24 +12,24 @@ portfolio at https://jlawcordova.com shows.
 
 ## When it's used
 
-The skill has two modes, and Claude picks one from the request:
+When I ask "draft my accomplishments" (or a scheduled task asks for the
+skill), Claude:
 
-- **Mode A: Draft.** A scheduled task invokes it, or I ask "draft my
-  accomplishments". It reviews my last 7 days on GitHub, skips work that's
-  already posted or drafted, writes 3 to 5 public-safe drafts to the inbox,
-  and notifies me. It never posts anything itself.
-- **Mode B: Set up or repair.** I ask "set up my accomplishments inbox" or
-  "fix my accomplishments inbox". It reuses or publishes the inbox artifact,
-  and creates or updates the weekly task unless I say not to.
+1. Finds my "Accomplishments Inbox" artifact. If I don't have one yet, it
+   publishes one from `assets/accomplishments-inbox.html` first.
+2. Reviews my last 7 days on GitHub and skips work that's already posted or
+   drafted.
+3. Writes up to 5 public-safe drafts to the inbox and tells me they're
+   there. It never posts anything itself.
 
 ```mermaid
 flowchart LR
-    Task["Scheduled task (optional)<br/>or 'draft my accomplishments'"] --> A["Mode A: Draft"]
-    A --> Inbox["Accomplishments Inbox"]
-    Inbox --> Post["I review and post<br/>add_accomplishment"]
-    Setup["'set up my accomplishments inbox'"] --> B["Mode B: Set up"]
-    B --> Inbox
-    B --> Task
+    Ask["'draft my accomplishments'<br/>or a scheduled task"] --> Inbox{"Inbox exists?"}
+    Inbox -- No --> Publish["Publish the inbox"]
+    Inbox -- Yes --> Draft["Gather and draft"]
+    Publish --> Draft
+    Draft --> Write["Write drafts to the inbox"]
+    Write --> Post["I review and post<br/>add_accomplishment"]
 ```
 
 ## Install
@@ -45,7 +45,7 @@ Then install the skill where it'll run:
 
 - **Claude Code:** nothing to do. Sessions on this repo load skills from
   `.claude/skills/` automatically.
-- **claude.ai** (needed for scheduled tasks, which run there):
+- **claude.ai** (also needed for scheduled tasks, which run there):
   1. Optional: in `SKILL.md`, replace `<INBOX_URL>` with my inbox's URL once
      I have one. If I leave it, the skill finds the inbox by its title.
   2. Zip the folder from the repo root:
@@ -60,29 +60,17 @@ Then install the skill where it'll run:
 After changing anything in this folder, upload it to claude.ai again so
 claude.ai uses the new version.
 
-## Set up the inbox
+## Use it from a scheduled task (optional)
 
-Only needed the first time, or if the inbox goes missing. In claude.ai, ask
-Claude "set up my accomplishments inbox". Mode B reuses my "Accomplishments
-Inbox" artifact, or publishes a new one from
-`assets/accomplishments-inbox.html`, and gives me its URL. It doesn't post
-anything during setup.
-
-## Run it weekly (optional)
-
-A scheduled task can use the skill if I want drafts to arrive on their own.
-During setup, Mode B also creates one named **Weekly accomplishments draft**
-that runs every Monday at 8:50 AM Manila time
-(`CRON_TZ=Asia/Manila 50 8 * * 1`), or updates it if it already exists. If I
-don't want it, I tell Claude to skip it. To create one myself, any schedule
-works.
-Its prompt only needs to name the skill and the inbox, for example:
+The skill doesn't set up any schedule. If I want drafts to arrive on their
+own, I can create a scheduled task in claude.ai (for example, Mondays at
+8:50 AM Manila time) whose prompt asks for the skill:
 
 ```text
-Use the accomplishments-inbox skill in Mode A (Draft) to draft this week's
-accomplishments into my Accomplishments Inbox: <INBOX_URL>. If the skill
-isn't available, send me a push notification saying the weekly
-accomplishments run couldn't find the accomplishments-inbox skill, and stop.
+Use the accomplishments-inbox skill to draft this week's accomplishments into
+my Accomplishments Inbox: <INBOX_URL>. If the skill isn't available, send me
+a push notification saying the accomplishments run couldn't find the
+accomplishments-inbox skill, and stop.
 ```
 
 Everything else (what to gather, the description style, the public-safety

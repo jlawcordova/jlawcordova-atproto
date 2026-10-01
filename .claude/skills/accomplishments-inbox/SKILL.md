@@ -1,6 +1,6 @@
 ---
 name: accomplishments-inbox
-description: J. Law Cordova's career accomplishments workflow. Use it to draft weekly accomplishments from his GitHub activity into his private "Accomplishments Inbox" artifact, and to set up or repair that inbox and its weekly scheduled task. Trigger on "draft my accomplishments", "weekly accomplishments", "set up my accomplishments inbox", "fix my accomplishments inbox", or a scheduled task that asks for this skill.
+description: J. Law Cordova's career accomplishments workflow. Use it to draft accomplishments from his recent GitHub activity into his private "Accomplishments Inbox" artifact, publishing the inbox first if he doesn't have one yet. Trigger on "draft my accomplishments", "weekly accomplishments", or a scheduled task that asks for this skill.
 ---
 
 # Accomplishments Inbox
@@ -10,32 +10,55 @@ accomplishments in his AT Protocol repo, and his portfolio at
 https://jlawcordova.com shows them. Anything posted is PUBLIC.
 
 The flow:
-1. A weekly run drafts accomplishments from his GitHub activity and writes
-   them to the private Accomplishments Inbox artifact.
+1. This skill drafts accomplishments from his GitHub activity and writes
+   them to the private Accomplishments Inbox artifact, publishing the inbox
+   first if it doesn't exist yet.
 2. He opens the inbox, picks drafts, optionally adds notes for Claude to apply,
    reviews the final text, and posts them from the page.
 
 Claude never posts accomplishments directly, except in the fallback described
-in "Mode A: Draft", step 5.
+in step 6.
 
 Connectors used: GitHub, and his accomplishments connector (tools
 `list_accomplishments`, `add_accomplishment`, `delete_accomplishment`).
 
-Pick the mode that matches the request:
-- **Mode A: Draft.** The weekly run, or "draft my accomplishments".
-- **Mode B: Set up or repair.** Create or reuse the inbox, and create or
-  update the scheduled task.
+## 1. Find or prepare the inbox
 
 The inbox URL: use the one given in the request. If there isn't one, list his
 artifacts and find the one titled "Accomplishments Inbox". The original is
 <INBOX_URL> (if that still reads `<INBOX_URL>`, it wasn't filled in at
 install time, so find the inbox by title).
 
----
+Reuse the existing inbox if he can open it. Otherwise, publish a new one:
+- Read `assets/accomplishments-inbox.html` in this skill. Before publishing,
+  set the `SERVER` constant at the top of its script to the accomplishments
+  connector's display name as it appears in claude.ai (currently assumed to
+  be "jlawcordova AT Proto"; in a live conversation, ask him if unsure).
+- Publish it with these capabilities, using the same connector name:
+  ```
+  {db: {rules: [{path: "", read: "owner", write: "owner"}]}, user: {},
+   sample: {}, mcp: {servers: [{server: "<connector display name>",
+   tools: ["add_accomplishment"]}]}}
+  ```
+  Only he can read or write its data.
+- Check once that collection "drafts" can be read, then continue with that
+  URL. Tell him the new URL in the report (step 6).
 
-## Mode A: Draft
+What the page does:
+- Lists pending drafts by week, each with a checkbox and Dismiss. Posted and
+  dismissed drafts go in a History list.
+- Has an optional "Notes for Claude" box. Notes are applied to the selected
+  drafts by the page's own Claude call. Links that weren't in the draft or
+  the notes are removed.
+- Shows the exact final text and validates every field before posting.
+- Posts through `add_accomplishment` one at a time, marks each draft posted
+  (status, rkey, rebuild, posted text, postedAt), and warns when `rebuild` is
+  "failed".
 
-### 1. Gather
+If he asks for page changes, edit the HTML, republish to the same URL, and
+keep the db document shape in step 5, because drafting depends on it.
+
+## 2. Gather
 
 Use the GitHub connector to review his activity over the past 7 days (up to
 now):
@@ -53,10 +76,11 @@ To avoid duplicates, also check:
   whatever its status (pending, posted or dismissed).
 
 If there was little or no activity, or nothing new to draft, stop. Don't
-write anything, and on a scheduled run don't notify him. Don't pad the week
-with weak drafts.
+write anything, and on a scheduled run don't notify him, unless step 1
+published a new inbox: then tell him its URL. Don't pad the week with weak
+drafts.
 
-### 2. Draft
+## 3. Draft
 
 Draft 3 to 5 accomplishments (fewer is fine if the week was light). Group
 related work into one accomplishment rather than listing PRs one by one.
@@ -76,7 +100,7 @@ Fields:
   private repository, its PRs, or its issues. Prefer the repository or the
   live site over individual pull request links.
 
-#### Description style
+### Description style
 
 - Keep it short: about 2 sentences. Lead with what the work is used for and
   the impact it has (who it helps, what it makes possible, what it replaces
@@ -96,7 +120,7 @@ Fields:
   public record on the AT Protocol (the open network behind Bluesky) and then
   triggers the site to rebuild."
 
-### 3. Keep it public-safe
+## 4. Keep it public-safe
 
 Work in private repositories is often for clients or his employer. For every
 draft:
@@ -116,7 +140,7 @@ The `source` field (below) is shown only in his private inbox, but keep it
 free of client names and private repo names too: describe private work there
 by its kind as well.
 
-### 4. Write the drafts to the inbox
+## 5. Write the drafts to the inbox
 
 Write all drafts in one `ArtifactData` "batch" call to the inbox URL, one
 "set" per draft, collection "drafts". Since these are new documents, omit
@@ -138,9 +162,9 @@ if_version.
   ```
 
 Never change or delete existing drafts, and never call `add_accomplishment` or
-`delete_accomplishment` in this mode. He posts from the inbox.
+`delete_accomplishment`. He posts from the inbox.
 
-### 5. Report
+## 6. Report
 
 On a scheduled run, after the batch succeeds, send a push notification. Put
 the number of new drafts and their titles in it, and say they're waiting in
@@ -157,61 +181,3 @@ call errors), fall back:
    replacement, show the final text and ask again.
 5. Report the rkey of each saved record, and tell him if any result says
    `rebuild: failed`.
-
----
-
-## Mode B: Set up or repair
-
-### 1. The inbox artifact
-
-Reuse the existing inbox if he can open it (see "The inbox URL" above).
-Otherwise:
-- Read `assets/accomplishments-inbox.html` in this skill. Before publishing,
-  set the `SERVER` constant at the top of its script to the accomplishments
-  connector's display name as it appears in claude.ai (currently assumed to
-  be "jlawcordova AT Proto"; ask him if unsure).
-- Publish it with these capabilities, using the same connector name:
-  ```
-  {db: {rules: [{path: "", read: "owner", write: "owner"}]}, user: {},
-   sample: {}, mcp: {servers: [{server: "<connector display name>",
-   tools: ["add_accomplishment"]}]}}
-  ```
-  Only he can read or write its data.
-- Check once that collection "drafts" can be read, then give him the URL.
-
-What the page does:
-- Lists pending drafts by week, each with a checkbox and Dismiss. Posted and
-  dismissed drafts go in a History list.
-- Has an optional "Notes for Claude" box. Notes are applied to the selected
-  drafts by the page's own Claude call. Links that weren't in the draft or
-  the notes are removed.
-- Shows the exact final text and validates every field before posting.
-- Posts through `add_accomplishment` one at a time, marks each draft posted
-  (status, rkey, rebuild, posted text, postedAt), and warns when `rebuild` is
-  "failed".
-
-If he asks for page changes, edit the HTML, republish to the same URL, and
-keep the db document shape above, because the weekly runs depend on it.
-
-### 2. The weekly scheduled task
-
-Use the scheduled-task tools, never local cron. Check for an existing task
-named "Weekly accomplishments draft" and update it rather than adding a
-duplicate.
-- Schedule: Mondays 8:50 AM Asia/Manila (`CRON_TZ=Asia/Manila 50 8 * * 1`).
-- It must not need his computer.
-- Prompt (replace <INBOX_URL>):
-  "Use the accomplishments-inbox skill in Mode A (Draft) to draft this week's
-  accomplishments into my Accomplishments Inbox: <INBOX_URL>. If the skill
-  isn't available, send me a push notification saying the weekly
-  accomplishments run couldn't find the accomplishments-inbox skill, and
-  stop."
-
-### 3. Confirm
-
-Tell him:
-- the inbox URL, and whether you reused it or published a new one;
-- the task's name, schedule and next run time;
-- whether the task's runs need his approval or run automatically.
-
-Don't run the task and don't post anything during setup.

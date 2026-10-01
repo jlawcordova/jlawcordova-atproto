@@ -96,7 +96,7 @@ footer { margin-top: 40px; font-family: var(--mono); font-size: 11.5px; color: v
     <p class="sub">Pick the drafts you want on your portfolio. Add notes if something should change. You'll see the exact text before anything is posted.</p>
   </header>
   <main id="main">
-    <div class="empty"><strong>Loading drafts…</strong>Your weekly task adds new drafts here every Monday.</div>
+    <div class="empty"><strong>Loading drafts…</strong>New drafts appear here when Claude drafts your accomplishments.</div>
   </main>
   <footer>Posts go to your public AT Protocol repo as <span>com.jlawcordova.profile.accomplishment</span> records, and your portfolio rebuilds after each one.</footer>
 </div>
@@ -174,7 +174,7 @@ function pickView() {
   const pending = S.drafts.filter(d => (d.status || "pending") === "pending");
   const done = S.drafts.filter(d => d.status && d.status !== "pending");
   if (!pending.length) {
-    frag.append(h("div", { class: "empty" }, h("strong", {}, "No drafts waiting."), "Your weekly task adds new drafts here every Monday. Drafts you post or dismiss move to the history below."));
+    frag.append(h("div", { class: "empty" }, h("strong", {}, "No drafts waiting."), "New drafts appear here when Claude drafts your accomplishments. Drafts you post or dismiss move to the history below."));
   } else {
     const weeks = [...new Set(pending.map(d => d.week || ""))].sort().reverse();
     for (const w of weeks) {
