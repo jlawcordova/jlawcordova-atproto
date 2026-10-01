@@ -206,9 +206,7 @@ and tokens (managed by the provider) and the PDS session under the key
 
 | Name | Purpose |
 | --- | --- |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
-| `BSKY_IDENTIFIER` | `jlawcordova.com` |
 | `BSKY_APP_PASSWORD` | Bluesky app password for this server only |
 | `GH_DISPATCH_TOKEN` | Fine-grained PAT, repo `jlawcordova/jlawcordova.github.io` only, Contents: read and write |
 
@@ -219,11 +217,14 @@ and tokens (managed by the provider) and the PDS session under the key
 | `ALLOWED_GITHUB_USER_ID` | `21234671` |
 | `ALLOWED_GITHUB_LOGIN` | `jlawcordova` |
 | `ATPROTO_HANDLE` | `jlawcordova.com` |
+| `BSKY_IDENTIFIER` | `jlawcordova.com` |
+| `GITHUB_CLIENT_ID` | Production GitHub OAuth App client ID (public: it appears in every sign-in URL) |
 | `PORTFOLIO_REPO` | `jlawcordova/jlawcordova.github.io` |
 | `PUBLIC_URL` | The Worker's public origin, no trailing slash. `http://localhost:8788` in the file; set to the `workers.dev` URL (or custom domain) after the first deploy. The OAuth provider needs it as the canonical resource and issuer, so it can't be inferred from a request |
 
 Local dev uses `.dev.vars` (git-ignored) with a separate GitHub OAuth App whose
-callback is `http://localhost:8788/callback`.
+callback is `http://localhost:8788/callback`; its `GITHUB_CLIENT_ID` and
+`PUBLIC_URL` there override the values in `wrangler.jsonc`.
 
 ### 4.3 Routes
 

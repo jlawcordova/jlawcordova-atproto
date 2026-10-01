@@ -1,8 +1,8 @@
 # Copy to .dev.vars (git-ignored). Use a separate GitHub OAuth App whose
-# callback is http://localhost:8788/callback.
+# callback is http://localhost:8788/callback. GITHUB_CLIENT_ID and PUBLIC_URL
+# override the production values in wrangler.jsonc.
 GITHUB_CLIENT_ID=
 GITHUB_CLIENT_SECRET=
-BSKY_IDENTIFIER=jlawcordova.com
 BSKY_APP_PASSWORD=
 GH_DISPATCH_TOKEN=
 PUBLIC_URL=http://localhost:8788
