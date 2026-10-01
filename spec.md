@@ -220,7 +220,7 @@ and tokens (managed by the provider) and the PDS session under the key
 | `BSKY_IDENTIFIER` | `jlawcordova.com` |
 | `GITHUB_CLIENT_ID` | Production GitHub OAuth App client ID (public: it appears in every sign-in URL) |
 | `PORTFOLIO_REPO` | `jlawcordova/jlawcordova.github.io` |
-| `PUBLIC_URL` | The Worker's public origin, no trailing slash. `http://localhost:8788` in the file; set to the `workers.dev` URL (or custom domain) after the first deploy. The OAuth provider needs it as the canonical resource and issuer, so it can't be inferred from a request |
+| `PUBLIC_URL` | The Worker's public origin, no trailing slash. Set to the `workers.dev` URL (or custom domain) that the first deploy prints. The OAuth provider needs it as the canonical resource and issuer, so it can't be inferred from a request |
 
 Local dev uses `.dev.vars` (git-ignored) with a separate GitHub OAuth App whose
 callback is `http://localhost:8788/callback`; its `GITHUB_CLIENT_ID` and
