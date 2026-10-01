@@ -12,6 +12,8 @@ myself. The task never posts anything.
 The prompt stays short on purpose. What to gather, the description style, the
 public-safety rules, how to write drafts to the inbox, and when to notify me
 all live in the `accomplishments-inbox` skill, so they're changed in one place.
+The skill's source is in this repo; after changing it, reinstall it in
+claude.ai (see [Setup](#setup)).
 
 ```mermaid
 flowchart LR
@@ -25,8 +27,14 @@ flowchart LR
 
 ## Setup
 
-1. In claude.ai, add the `accomplishments-inbox` skill. It uses
-   `accomplishments-inbox.html` for the inbox page.
+1. Install the `accomplishments-inbox` skill from
+   [`.claude/skills/accomplishments-inbox/`](../.claude/skills/accomplishments-inbox/SKILL.md).
+   Its inbox page is
+   [`assets/accomplishments-inbox.html`](../.claude/skills/accomplishments-inbox/assets/accomplishments-inbox.html).
+   - **Claude Code** sessions on this repo load it automatically.
+   - **claude.ai** (where the scheduled task runs): zip the folder
+     (`cd .claude/skills && zip -r accomplishments-inbox.zip accomplishments-inbox`)
+     and upload the zip as a custom skill in claude.ai settings.
 2. Make sure these connectors are connected:
    - **GitHub**, to read my activity.
    - **jlawcordova AT Proto** (the `jlawcordova-mcp` server), for
