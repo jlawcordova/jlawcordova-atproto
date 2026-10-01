@@ -1,7 +1,7 @@
 # Spec: Accomplishments on AT Protocol
 
-> Status: v0.2 — Owner: J. Law Cordova — Date: 2026-10-01 — Implements
-> [`intent.md`](intent.md) v0.3
+> Status: **Closed** (v0.2) — Owner: J. Law Cordova — Date: 2026-10-01 —
+> Implements [`intent.md`](intent.md) v0.3
 
 This spec turns the intent into contracts that can be built and tested. Where
 it and the intent disagree, the intent wins and this file gets fixed.
@@ -32,7 +32,7 @@ flowchart TD
 | Lexicon | `lexicons/com/jlawcordova/profile/accomplishment.json` | Record schema |
 | Shared validator | `shared/` (npm workspace `@jlawcordova/accomplishment`) | Record validation, `YYYY-MM` rules, sort order |
 | MCP server | `jlawcordova-mcp/` | OAuth, tools, PDS session, rebuild trigger |
-| Weekly prompt | `docs/weekly-task-prompt.md` | Drafting accomplishments for approval |
+| Weekly prompt | [`docs/weekly-task-prompt.md`](../../weekly-task-prompt.md) | Drafting accomplishments for approval |
 | Portfolio | `jlawcordova/jlawcordova.github.io` | Fetch script, Accomplishments section, workflow |
 
 ## 2. Lexicon

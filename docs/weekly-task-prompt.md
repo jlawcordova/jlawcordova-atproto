@@ -1,6 +1,6 @@
 # Weekly task prompt: draft accomplishments
 
-> Implements [`spec.md`](../spec.md) §6 (build order step 5).
+> Implements [`spec.md`](intents/2026-10-kickoff/spec.md) §6 (build order step 5).
 
 A prompt for a weekly scheduled task in the Claude app. Each run reviews my
 GitHub activity from the past 7 days, drafts accomplishments, and waits for me
