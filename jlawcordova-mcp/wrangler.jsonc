@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jlawcordova-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "49fb820d9f594e13b888894021046856" }], // jlawcordova-mcp-session
+  "vars": {
+    "ALLOWED_GITHUB_USER_ID": "21234671",
+    "ALLOWED_GITHUB_LOGIN": "jlawcordova",
+    "ATPROTO_HANDLE": "jlawcordova.com",
+    "BSKY_IDENTIFIER": "jlawcordova.com",
+    // Production GitHub OAuth App; local dev overrides it in .dev.vars.
+    "GITHUB_CLIENT_ID": "Ov23lip0SZYBKRd9VIJ3",
+    "PORTFOLIO_REPO": "jlawcordova/jlawcordova.github.io",
+    // Public origin of this Worker, no trailing slash.
+    "PUBLIC_URL": "https://jlawcordova-mcp.jlawcordova.workers.dev"
+  }
+}
