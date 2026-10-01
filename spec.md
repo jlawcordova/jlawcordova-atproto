@@ -8,17 +8,23 @@ it and the intent disagree, the intent wins and this file gets fixed.
 
 ## 1. Components
 
-```
-Claude ──MCP (Streamable HTTP + OAuth)──▶ jlawcordova-mcp (Cloudflare Worker)
-                                              │  createRecord / deleteRecord
-                                              ▼
-                                   PDS (bsky.social, did of jlawcordova.com)
-                                              ▲  public listRecords
-            repository_dispatch               │
- jlawcordova-mcp ─────────────────▶ GitHub Actions (jlawcordova.github.io)
-                                              │  fetch → JSON → astro build
-                                              ▼
-                                   GitHub Pages (https://jlawcordova.com)
+```mermaid
+flowchart TD
+    Claude["Claude (MCP client)"]
+    MCP["jlawcordova-mcp<br/>Cloudflare Worker"]
+    GitHubOAuth["GitHub OAuth"]
+    KV[("KV<br/>jlawcordova-mcp-session")]
+    PDS[("PDS on bsky.social<br/>repo of jlawcordova.com")]
+    Actions["GitHub Actions<br/>jlawcordova.github.io"]
+    Pages["GitHub Pages<br/>jlawcordova.com"]
+
+    Claude -->|"MCP: Streamable HTTP + OAuth"| MCP
+    MCP -->|"sign-in and owner check"| GitHubOAuth
+    MCP <-->|"OAuth grants, PDS session"| KV
+    MCP -->|"createRecord / deleteRecord"| PDS
+    MCP -->|"repository_dispatch: atproto-updated"| Actions
+    Actions -->|"public listRecords"| PDS
+    Actions -->|"fetch, JSON, astro build, deploy"| Pages
 ```
 
 | Component | Location | Owns |
