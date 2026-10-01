@@ -1,0 +1,58 @@
+{
+  "lexicon": 1,
+  "id": "com.jlawcordova.profile.accomplishment",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "tid",
+      "description": "A single career accomplishment. Records are public.",
+      "record": {
+        "type": "object",
+        "required": ["title", "description", "startDate", "createdAt"],
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 2000,
+            "maxGraphemes": 200,
+            "description": "Short headline of the accomplishment."
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000,
+            "maxGraphemes": 1000,
+            "description": "What was done and its impact, impact first."
+          },
+          "startDate": {
+            "type": "string",
+            "minLength": 7,
+            "maxLength": 7,
+            "description": "Month it started or happened, as YYYY-MM."
+          },
+          "endDate": {
+            "type": "string",
+            "minLength": 7,
+            "maxLength": 7,
+            "description": "Month it finished, as YYYY-MM. Not before startDate. Omit if ongoing or a single month."
+          },
+          "tags": {
+            "type": "array",
+            "maxLength": 10,
+            "items": { "type": "string", "maxLength": 640, "maxGraphemes": 64 },
+            "description": "Skills, technologies, or themes."
+          },
+          "links": {
+            "type": "array",
+            "maxLength": 10,
+            "items": { "type": "string", "format": "uri" },
+            "description": "Evidence such as PRs, articles, demos, or press. http or https only."
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the record was created."
+          }
+        }
+      }
+    }
+  }
+}
