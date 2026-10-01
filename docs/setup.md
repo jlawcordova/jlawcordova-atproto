@@ -21,9 +21,10 @@ flowchart LR
         B2["First deploy"]
         B3["Secrets"]
         B4["Smoke test"]
+        B5["Deploys from GitHub Actions"]
     end
     A3 --> A4
-    A --> B1 --> B2 --> B3 --> B4
+    A --> B1 --> B2 --> B3 --> B4 --> B5
 ```
 
 ## Part A: credentials (no code needed)
@@ -212,6 +213,27 @@ npx wrangler secret delete COOKIE_ENCRYPTION_KEY
 
 Adding and deleting a real record is E1–E3, after the portfolio PR (step 4).
 
+### B5. Deploys from GitHub Actions
+
+After the first deploy, `.github/workflows/deploy-mcp.yml` deploys the Worker
+on every push to `main` that touches it (`jlawcordova-mcp/`, `shared/`,
+`lexicons/`, or the root npm files). It can also be run by hand from the
+**Actions** tab. Pull requests run the tests and a dry-run bundle but don't
+deploy.
+
+The workflow needs one repository secret, `CLOUDFLARE_API_TOKEN`:
+
+1. In the Cloudflare dashboard, go to **My Profile → API Tokens → Create
+   Token** and use the **Edit Cloudflare Workers** template.
+2. Limit **Account Resources** and **Zone Resources** to your own account.
+3. Create the token and copy it.
+4. In GitHub, go to `jlawcordova/jlawcordova-atproto` → **Settings → Secrets
+   and variables → Actions → New repository secret**. Name it
+   `CLOUDFLARE_API_TOKEN` and paste the token.
+
+A deploy uploads the code and the vars in `wrangler.jsonc`. It doesn't touch
+the secrets from B3.
+
 ## Rotating a credential
 
 | Credential | Revoke at | Then |
@@ -219,3 +241,4 @@ Adding and deleting a real record is E1–E3, after the portfolio PR (step 4).
 | Bluesky app password | bsky.app → App passwords | New one, `wrangler secret put BSKY_APP_PASSWORD`. The stored session stops refreshing and the Worker signs in again with the new password (§4.5) |
 | Dispatch token | GitHub → Settings → Personal access tokens | New one, `wrangler secret put GH_DISPATCH_TOKEN` |
 | OAuth client secret | GitHub → Settings → Developer settings → OAuth Apps | New one, `wrangler secret put GITHUB_CLIENT_SECRET` |
+| Cloudflare API token | Cloudflare → My Profile → API Tokens | New one, then update the `CLOUDFLARE_API_TOKEN` repository secret (B5) |
