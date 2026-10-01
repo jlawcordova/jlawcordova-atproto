@@ -1,6 +1,6 @@
 # Intent: Accomplishments on AT Protocol
 
-> Status: Draft v0.2 — Owner: J. Law Cordova — Date: 2026-10-01
+> Status: v0.3 — Owner: J. Law Cordova — Date: 2026-10-01
 
 ## Why
 
@@ -77,9 +77,6 @@ NSID: `com.jlawcordova.profile.accomplishment`, record key `tid`.
 | `description` | string, max 1000 graphemes | yes | What I did and the impact, impact first |
 | `startDate` | string, `YYYY-MM` | yes | Month it started (or happened) |
 | `endDate` | string, `YYYY-MM` | no | Month it finished; omit if ongoing or a single month. Must not be before `startDate` |
-| `organization` | string | no | Employer or context. Never a confidential client name |
-| `role` | string | no | My role at the time |
-| `project` | string | no | Project name, if public |
 | `tags` | array of strings, max 10 | no | Skills, technologies, themes |
 | `links` | array of `uri` strings, max 10 | no | Evidence: PRs, articles, demos, press |
 | `createdAt` | string, `datetime` | yes | Record creation timestamp, set by the server |
@@ -139,16 +136,16 @@ page and sort; they do not rely on `listRecords` order.
 | Drafts | No draft store. Drafts are shown in the conversation and written only after I approve them |
 | Dates | `startDate` / `endDate` as `YYYY-MM` strings |
 | Links | `links` array of URIs |
+| Organization / role / project | Dropped from v1. Context that is safe to publish goes in `description`; fields can be added later |
+| MCP server style | `createMcpHandler` (stateless). `McpAgent` is deprecated and feature-frozen |
 
 ## Open questions
 
-1. **MCP server style** — `createMcpHandler` (stateless, which Cloudflare's docs
-   now recommend for new servers) or `McpAgent` (Durable Object per session).
-   To settle in the spec.
+None. Details are in [`spec.md`](spec.md).
 
 ## Next steps in the AI-native SDLC
 
-1. **Intent** (this document) — review.
+1. **Intent** (this document) — done.
 2. **Spec** — Lexicon JSON, MCP tool contracts (inputs/outputs/errors), auth
    design, and acceptance tests in a `spec.md`.
 3. **Plan** — break the spec into small, verifiable tasks.
