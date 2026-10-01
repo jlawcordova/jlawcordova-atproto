@@ -1,6 +1,6 @@
 # Spec: Accomplishments on AT Protocol
 
-> Status: v0.1 — Owner: J. Law Cordova — Date: 2026-10-01 — Implements
+> Status: v0.2 — Owner: J. Law Cordova — Date: 2026-10-01 — Implements
 > [`intent.md`](intent.md) v0.3
 
 This spec turns the intent into contracts that can be built and tested. Where
@@ -180,6 +180,21 @@ and pinned exactly (no `^` or `~`) in `package.json`, with the lockfile
 committed. A new `McpServer` is created for each request, as the SDK requires
 for stateless servers.
 
+Version constraints found at implementation time (v0.2):
+
+- `@modelcontextprotocol/server` is pinned to `2.0.0`, the version `agents`
+  0.24.0 peers on.
+- `vitest` is `4.1.x` in every workspace, because
+  `@cloudflare/vitest-pool-workers` 0.22 requires `^4.1`.
+- The repo's `.npmrc` sets `legacy-peer-deps=true`: npm 10's resolver crashes
+  on this dependency tree. The required peers of `agents` that the Worker
+  actually loads are listed as direct dependencies instead.
+- `@cloudflare/workers-oauth-provider` 1.2 ships the consent and upstream
+  sign-in helpers (`beginConsent`, `approveConsent`, `beginUpstream`,
+  `finishUpstream`). They bind the consent page and the GitHub `state` to the
+  browser with their own cookies, so no cookie-signing secret is needed.
+  Dynamic client registration is on (Client ID Metadata Documents are not).
+
 ### 4.2 Configuration
 
 **KV:** one namespace titled `jlawcordova-mcp-session`, bound as `OAUTH_KV`
@@ -193,7 +208,6 @@ and tokens (managed by the provider) and the PDS session under the key
 | --- | --- |
 | `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
 | `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
-| `COOKIE_ENCRYPTION_KEY` | Signs the approval-dialog cookie (32 random bytes, hex) |
 | `BSKY_IDENTIFIER` | `jlawcordova.com` |
 | `BSKY_APP_PASSWORD` | Bluesky app password for this server only |
 | `GH_DISPATCH_TOKEN` | Fine-grained PAT, repo `jlawcordova/jlawcordova.github.io` only, Contents: read and write |
@@ -206,6 +220,7 @@ and tokens (managed by the provider) and the PDS session under the key
 | `ALLOWED_GITHUB_LOGIN` | `jlawcordova` |
 | `ATPROTO_HANDLE` | `jlawcordova.com` |
 | `PORTFOLIO_REPO` | `jlawcordova/jlawcordova.github.io` |
+| `PUBLIC_URL` | The Worker's public origin, no trailing slash. `http://localhost:8788` in the file; set to the `workers.dev` URL (or custom domain) after the first deploy. The OAuth provider needs it as the canonical resource and issuer, so it can't be inferred from a request |
 
 Local dev uses `.dev.vars` (git-ignored) with a separate GitHub OAuth App whose
 callback is `http://localhost:8788/callback`.
@@ -249,13 +264,18 @@ Writes go to the PDS through `AtpAgent` from `@atproto/api`, signed in with the
 app password.
 
 1. **Resolve the PDS.** `com.atproto.identity.resolveHandle` for
-   `ATPROTO_HANDLE` gives the DID. The DID document (from `plc.directory` for
+   `ATPROTO_HANDLE`, asked of `https://public.api.bsky.app`, gives the DID. The DID document (from `plc.directory` for
    `did:plc`) gives the `#atproto_pds` service endpoint. Both are cached in KV
    for 1 hour under `atproto:identity:v1`. Nothing is hardcoded.
-2. **Load the session** from `atproto:session:v1` and call `resumeSession`.
+2. **Load the session** from `atproto:session:v1` and hand it to the agent as
+   is. `agent.resumeSession()` isn't used: it forces a refresh on every call,
+   which would rotate the refresh token and write KV on every request.
 3. **Refresh, don't log in.** On an expired access token the agent refreshes
-   with the refresh token. `createSession` is used only when there's no stored
-   session or the refresh fails, because `createSession` is rate-limited.
+   with the refresh token, once the PDS reports `ExpiredToken`. `createSession`
+   is used only when there's no stored session, or the PDS still rejects the
+   session after that (the refresh failed). The stored session is then dropped,
+   one `createSession` is made, and the call is retried once. This matters
+   because `createSession` is rate-limited.
 4. **Persist** every new or refreshed session back to KV via the agent's
    `persistSession` callback.
 5. **Check the DID.** After any login or resume, `session.did` must equal the

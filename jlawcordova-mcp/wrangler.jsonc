@@ -1,0 +1,20 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "jlawcordova-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  // The KV namespace titled `jlawcordova-mcp-session` is created at deploy time
+  // (spec step 3); add its `id` here then.
+  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  "vars": {
+    "ALLOWED_GITHUB_USER_ID": "21234671",
+    "ALLOWED_GITHUB_LOGIN": "jlawcordova",
+    "ATPROTO_HANDLE": "jlawcordova.com",
+    "PORTFOLIO_REPO": "jlawcordova/jlawcordova.github.io",
+    // Public origin of this Worker, no trailing slash. Replace with the
+    // workers.dev URL (or custom domain) after the first deploy.
+    "PUBLIC_URL": "http://localhost:8788"
+  }
+}

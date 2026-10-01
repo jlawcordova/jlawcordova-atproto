@@ -2,7 +2,8 @@
   "name": "jlawcordova-atproto",
   "private": true,
   "workspaces": [
-    "shared"
+    "shared",
+    "jlawcordova-mcp"
   ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
