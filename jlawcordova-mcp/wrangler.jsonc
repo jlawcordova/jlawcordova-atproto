@@ -5,9 +5,7 @@
   "compatibility_date": "2026-08-01",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
-  // The KV namespace titled `jlawcordova-mcp-session` is created at deploy time
-  // (spec step 3); add its `id` here then.
-  "kv_namespaces": [{ "binding": "OAUTH_KV" }],
+  "kv_namespaces": [{ "binding": "OAUTH_KV", "id": "49fb820d9f594e13b888894021046856" }], // jlawcordova-mcp-session
   "vars": {
     "ALLOWED_GITHUB_USER_ID": "21234671",
     "ALLOWED_GITHUB_LOGIN": "jlawcordova",
