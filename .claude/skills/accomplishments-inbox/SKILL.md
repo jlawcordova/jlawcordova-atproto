@@ -28,7 +28,8 @@ Pick the mode that matches the request:
 
 The inbox URL: use the one given in the request. If there isn't one, list his
 artifacts and find the one titled "Accomplishments Inbox". The original is
-https://claude.ai/artifact/SQsXW4NuPRujfi3UeBk3hw.
+<INBOX_URL> (if that still reads `<INBOX_URL>`, it wasn't filled in at
+install time, so find the inbox by title).
 
 ---
 
