@@ -11,11 +11,10 @@ or a file that's tracked by git.
 ```mermaid
 flowchart LR
     subgraph A["Part A: now"]
-        A1["Cookie key"]
-        A2["Bluesky app password"]
-        A3["Dispatch token"]
-        A4["workers.dev subdomain"]
-        A5["GitHub OAuth Apps"]
+        A1["Bluesky app password"]
+        A2["Dispatch token"]
+        A3["workers.dev subdomain"]
+        A4["GitHub OAuth Apps"]
     end
     subgraph B["Part B: after step 2"]
         B1["KV namespace"]
@@ -23,23 +22,17 @@ flowchart LR
         B3["Secrets"]
         B4["Smoke test"]
     end
-    A4 --> A5
+    A3 --> A4
     A --> B1 --> B2 --> B3 --> B4
 ```
 
 ## Part A: credentials (no code needed)
 
-### A1. Cookie encryption key
+There's no cookie-signing key to generate. The OAuth provider binds the
+consent page and the GitHub `state` to the browser with its own cookies
+(spec §4.1).
 
-`COOKIE_ENCRYPTION_KEY` is 32 random bytes, hex encoded:
-
-```sh
-openssl rand -hex 32
-```
-
-Generate one for production and a different one for `.dev.vars`.
-
-### A2. Bluesky app password
+### A1. Bluesky app password
 
 For `BSKY_APP_PASSWORD`. Sign in to bsky.app as `jlawcordova.com`.
 
@@ -49,11 +42,12 @@ For `BSKY_APP_PASSWORD`. Sign in to bsky.app as `jlawcordova.com`.
    off.
 3. Copy the password (`xxxx-xxxx-xxxx-xxxx`).
 
-`BSKY_IDENTIFIER` is `jlawcordova.com`. Never use the account's main
+The account it belongs to, `BSKY_IDENTIFIER`, is a var in `wrangler.jsonc`
+that's already set to `jlawcordova.com`. Never use the account's main
 password. An app password can be revoked on its own, and it can't change the
 account's email, password, or handle.
 
-### A3. Rebuild dispatch token
+### A2. Rebuild dispatch token
 
 `GH_DISPATCH_TOKEN` lets the Worker send `repository_dispatch` to the
 portfolio repo, and nothing else.
@@ -85,7 +79,7 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 
 `read -rs` keeps the token out of your shell history.
 
-### A4. workers.dev subdomain
+### A3. workers.dev subdomain
 
 The production callback URL is
 `https://jlawcordova-mcp.<account-subdomain>.workers.dev/callback`, so find the
@@ -96,7 +90,7 @@ if none is set up yet, the dashboard asks you to pick one.
 If you'd rather use a custom domain such as `mcp.jlawcordova.com`, decide now:
 the callback URL depends on it.
 
-### A5. GitHub OAuth Apps (two)
+### A4. GitHub OAuth Apps (two)
 
 One OAuth App holds one callback URL, so production and local dev each get
 their own app. Go to <https://github.com/settings/developers> → **OAuth Apps →
@@ -109,26 +103,34 @@ New OAuth App**.
 | Authorization callback URL | `https://jlawcordova-mcp.<account-subdomain>.workers.dev/callback` | `http://localhost:8788/callback` |
 | Enable Device Flow | off | off |
 
-For each app, click **Generate a new client secret**, then save the
-**Client ID** and the secret as `GITHUB_CLIENT_ID` and `GITHUB_CLIENT_SECRET`.
+For each app, click **Generate a new client secret** and save the secret as
+`GITHUB_CLIENT_SECRET`. The **Client ID** isn't secret, because it appears in
+every sign-in URL:
+
+- **Production:** the client ID is the `GITHUB_CLIENT_ID` var in
+  `wrangler.jsonc`. If you create a new production app, update it there and
+  deploy.
+- **Local dev:** the client ID goes in `.dev.vars` (A5) and overrides the
+  production value.
 
 The Worker asks GitHub for no scopes, so signing in only shares your public
 profile. Who gets in is decided by the owner check (§4.4), not by the app.
 
-### A6. Local `.dev.vars`
+### A5. Local `.dev.vars`
 
-Once step 2 adds `jlawcordova-mcp/`, create `jlawcordova-mcp/.dev.vars` with
-the **dev** OAuth App and the dev cookie key. `.dev.vars` is already
-git-ignored.
+Copy `jlawcordova-mcp/.dev.vars.example` to `jlawcordova-mcp/.dev.vars` and
+fill it in with the **dev** OAuth App. `.dev.vars` is already git-ignored.
 
 ```sh
 GITHUB_CLIENT_ID=...
 GITHUB_CLIENT_SECRET=...
-COOKIE_ENCRYPTION_KEY=...
-BSKY_IDENTIFIER=jlawcordova.com
 BSKY_APP_PASSWORD=...
 GH_DISPATCH_TOKEN=...
+PUBLIC_URL=http://localhost:8788
 ```
+
+`GITHUB_CLIENT_ID` and `PUBLIC_URL` override the production values in
+`wrangler.jsonc`. The other vars come from `wrangler.jsonc` as they are.
 
 ## Part B: Cloudflare (needs the step 2 Worker)
 
@@ -140,7 +142,7 @@ check the account with `npx wrangler whoami`.
 Create a namespace titled exactly `jlawcordova-mcp-session`. In the dashboard
 that's **Storage & databases → KV → Create**; Claude can also create it
 through the Cloudflare connector once you approve. Then put its ID in
-`wrangler.jsonc`:
+`wrangler.jsonc` (it's already there for the current namespace):
 
 ```jsonc
 "kv_namespaces": [
@@ -157,31 +159,46 @@ looks for.
 npx wrangler deploy
 ```
 
-The output prints the Worker's URL. Check that it matches the callback URL in
-the production OAuth App (A5), and fix the app if it doesn't. Until B3 is done
-the Worker runs, but sign-in and tools fail because the secrets are missing.
+The output prints the Worker's URL. Check that:
+
+- it matches the callback URL in the production OAuth App (A4), and fix the
+  app if it doesn't;
+- it matches `PUBLIC_URL` in `wrangler.jsonc`, with no trailing slash. If it
+  doesn't, update `PUBLIC_URL` and deploy again. The OAuth provider uses it as
+  the issuer and resource, and the GitHub redirect is built from it.
+
+Until B3 is done the Worker runs, but sign-in and tools fail because the
+secrets are missing.
 
 ### B3. Production secrets
 
 Each command prompts for the value, so the value stays out of your shell
-history. Use the **production** OAuth App and the production cookie key.
+history. Use the **production** OAuth App.
 
 ```sh
-npx wrangler secret put GITHUB_CLIENT_ID
 npx wrangler secret put GITHUB_CLIENT_SECRET
-npx wrangler secret put COOKIE_ENCRYPTION_KEY
-npx wrangler secret put BSKY_IDENTIFIER
 npx wrangler secret put BSKY_APP_PASSWORD
 npx wrangler secret put GH_DISPATCH_TOKEN
 npx wrangler secret list
 ```
 
-`secret list` should show all six names. It never shows values. Secrets take
-effect immediately; there's no need to deploy again.
+`secret list` should show exactly these three names. It never shows values.
+Secrets take effect immediately; there's no need to deploy again.
 
 The vars (`ALLOWED_GITHUB_USER_ID`, `ALLOWED_GITHUB_LOGIN`, `ATPROTO_HANDLE`,
-`PORTFOLIO_REPO`) live in `wrangler.jsonc` and are deployed with the code.
-Don't set them as secrets.
+`BSKY_IDENTIFIER`, `GITHUB_CLIENT_ID`, `PORTFOLIO_REPO`, `PUBLIC_URL`) live in
+`wrangler.jsonc` and are deployed with the code. Don't set them as secrets.
+
+If you followed an earlier version of this guide, `secret list` may also show
+`GITHUB_CLIENT_ID`, `BSKY_IDENTIFIER`, or `COOKIE_ENCRYPTION_KEY`. Delete
+them: a secret and a var can't share a name, and the Worker no longer reads
+the cookie key.
+
+```sh
+npx wrangler secret delete GITHUB_CLIENT_ID
+npx wrangler secret delete BSKY_IDENTIFIER
+npx wrangler secret delete COOKIE_ENCRYPTION_KEY
+```
 
 ### B4. Smoke test
 
@@ -202,4 +219,3 @@ Adding and deleting a real record is E1–E3, after the portfolio PR (step 4).
 | Bluesky app password | bsky.app → App passwords | New one, `wrangler secret put BSKY_APP_PASSWORD`. The stored session stops refreshing and the Worker signs in again with the new password (§4.5) |
 | Dispatch token | GitHub → Settings → Personal access tokens | New one, `wrangler secret put GH_DISPATCH_TOKEN` |
 | OAuth client secret | GitHub → Settings → Developer settings → OAuth Apps | New one, `wrangler secret put GITHUB_CLIENT_SECRET` |
-| Cookie key | n/a | New one, `wrangler secret put COOKIE_ENCRYPTION_KEY`; the next sign-in shows the approval dialog again |
