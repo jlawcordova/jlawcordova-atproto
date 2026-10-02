@@ -1,4 +1,5 @@
 import OAuthProvider from "@cloudflare/workers-oauth-provider";
+import { handleApi } from "./api.js";
 import type { Env } from "./env.js";
 import { githubHandler } from "./github-handler.js";
 import { mcpApiHandler } from "./mcp.js";
@@ -31,6 +32,8 @@ function providerFor(env: Env): OAuthProvider<Env> {
 
 export default {
   fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    // The CLI's HTTP API has its own token check; it never goes through the OAuth provider.
+    if (new URL(request.url).pathname.startsWith("/api/")) return handleApi(request, env);
     return providerFor(env).fetch(request, env, ctx);
   },
 } satisfies ExportedHandler<Env>;

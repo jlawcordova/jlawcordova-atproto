@@ -35,12 +35,17 @@ export class FakeNetwork {
   refreshFails = false;
   sessionDid = DID;
   pageSize = 100;
+  listStatus: number | undefined;
   private recordCounter = 0;
 
   // GitHub
   dispatchStatus = 204;
   dispatchThrows: Error | undefined;
   githubUser: { id: number; login: string } = { id: 21234671, login: "jlawcordova" };
+  /** Tokens issued to this Worker's OAuth App, and who they belong to. Anything else is unknown to the app. */
+  appTokens = new Map<string, { id: number; login: string }>();
+  tokenCheckStatus: number | undefined;
+  tokenCheckThrows: Error | undefined;
 
   callsTo(pattern: string | RegExp, method?: string): Call[] {
     return this.calls.filter(
@@ -114,6 +119,7 @@ export class FakeNetwork {
           if (!this.validAccess.has(this.bearer(call))) return this.expired();
           return this.json({ did: DID, handle: "jlawcordova.com", active: true });
         case "com.atproto.repo.listRecords": {
+          if (this.listStatus !== undefined) return this.json({ error: "InternalServerError" }, this.listStatus);
           const all = [...this.records.values()];
           const start = Number(searchParams.get("cursor") ?? 0);
           const size = Math.min(Number(searchParams.get("limit") ?? 50), this.pageSize);
@@ -146,6 +152,15 @@ export class FakeNetwork {
     if (host === "api.github.com" && pathname.endsWith("/dispatches")) {
       if (this.dispatchThrows) throw this.dispatchThrows;
       return new Response(null, { status: this.dispatchStatus });
+    }
+    if (host === "api.github.com" && pathname === "/applications/test-github-client-id/token") {
+      if (this.tokenCheckThrows) throw this.tokenCheckThrows;
+      const expected = `Basic ${btoa("test-github-client-id:test-github-client-secret-SECRET")}`;
+      if (call.headers.get("authorization") !== expected) return this.json({ message: "Bad credentials" }, 401);
+      if (this.tokenCheckStatus !== undefined) return this.json({ message: "boom" }, this.tokenCheckStatus);
+      const user = this.appTokens.get(JSON.parse(call.body).access_token);
+      if (!user) return this.json({ message: "Not Found" }, 404);
+      return this.json({ user: { ...user }, app: { client_id: "test-github-client-id" } });
     }
     if (host === "api.github.com" && pathname === "/user") return this.json(this.githubUser);
     if (host === "github.com" && pathname === "/login/oauth/access_token") {
