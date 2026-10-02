@@ -4,6 +4,7 @@ import * as z from "zod";
 import {
   addAccomplishment,
   deleteAccomplishment,
+  describeError,
   listAccomplishments,
   type AddInput,
   type Failure,
@@ -23,14 +24,6 @@ const fail = (message: string): ToolResult => ({
   content: [{ type: "text", text: message }],
   isError: true,
 });
-
-/** Short description of an unexpected failure, without anything that could carry a secret. */
-function describeError(error: unknown): string {
-  const e = error as { status?: number; error?: string; name?: string } | null;
-  if (e?.status !== undefined && e?.error) return `PDS request failed: ${e.error} (HTTP ${e.status})`;
-  if (e?.status !== undefined) return `PDS request failed (HTTP ${e.status})`;
-  return "Request failed. See the server logs.";
-}
 
 /**
  * Defense in depth: even behind the OAuth provider, every tool re-checks that
