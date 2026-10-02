@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "shared",
-    "jlawcordova-mcp"
+    "jlawcordova-mcp",
+    "jlawcordova-cli"
   ],
   "scripts": {
     "test": "npm test --workspaces --if-present",
