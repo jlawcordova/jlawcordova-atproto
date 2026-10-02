@@ -1,40 +1,20 @@
 import { parseArgs } from "node:util";
+import { callApi, EXIT, fail, findToken, NEEDS_LOGIN, report, type Deps, type Request } from "./api.ts";
+import { login } from "./login.ts";
 
-export const DEFAULT_URL = "https://jlawcordova-mcp.jlawcordova.workers.dev";
-const REQUEST_TIMEOUT_MS = 30_000;
-
-export const EXIT = { ok: 0, refused: 1, usage: 2, auth: 3, network: 4 } as const;
-
-export interface Deps {
-  env: Record<string, string | undefined>;
-  fetch: typeof fetch;
-  readStdin: () => Promise<string>;
-  readKeychainToken: () => Promise<string | undefined>;
-  stdout: (text: string) => void;
-  stderr: (text: string) => void;
-}
+export type { Deps } from "./api.ts";
 
 const USAGE = `Usage:
   accomplishments list [--since YYYY-MM] [--limit N]
   accomplishments add              (a JSON object on stdin)
   accomplishments delete <rkey>
+  accomplishments login            (sign in with GitHub; once per machine)
 
 Prints JSON on stdout. Errors are JSON on stderr.
 Exit codes: 0 ok, 1 refused or failed, 2 bad usage, 3 not signed in, 4 network.
 `;
 
 class Usage extends Error {}
-
-function fail(deps: Deps, code: number, error: string, message: string, extra: Record<string, unknown> = {}): number {
-  deps.stderr(`${JSON.stringify({ error, message, ...extra }, null, 2)}\n`);
-  return code;
-}
-
-interface Request {
-  method: "GET" | "POST" | "DELETE";
-  path: string;
-  body?: string;
-}
 
 /** Turns the arguments into a request, or throws Usage. `add` reads its body here, before anything is sent. */
 async function plan(argv: string[], deps: Deps): Promise<Request> {
@@ -88,15 +68,16 @@ async function plan(argv: string[], deps: Deps): Promise<Request> {
   }
 }
 
-async function findToken(deps: Deps): Promise<string | undefined> {
-  const fromEnv = deps.env.ACCOMPLISHMENTS_TOKEN?.trim();
-  if (fromEnv) return fromEnv;
-  return (await deps.readKeychainToken())?.trim() || undefined;
-}
-
-const NEEDS_LOGIN = "Run `accomplishments login`.";
 
 export async function run(argv: string[], deps: Deps): Promise<number> {
+  if (argv[0] === "login") {
+    if (argv.length > 1) {
+      deps.stderr(`${JSON.stringify({ error: "usage", message: "login takes no arguments." }, null, 2)}\n${USAGE}`);
+      return EXIT.usage;
+    }
+    return login(deps);
+  }
+
   let request: Request;
   try {
     request = await plan(argv, deps);
@@ -109,44 +90,8 @@ export async function run(argv: string[], deps: Deps): Promise<number> {
   const token = await findToken(deps);
   if (!token) return fail(deps, EXIT.auth, "not_signed_in", `You're not signed in. ${NEEDS_LOGIN}`);
 
-  const origin = (deps.env.ACCOMPLISHMENTS_URL?.trim() || DEFAULT_URL).replace(/\/+$/, "");
-  let res: Response;
-  try {
-    res = await deps.fetch(`${origin}${request.path}`, {
-      method: request.method,
-      headers: {
-        authorization: `Bearer ${token}`,
-        accept: "application/json",
-        ...(request.body !== undefined && { "content-type": "application/json" }),
-      },
-      ...(request.body !== undefined && { body: request.body }),
-      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
-    });
-  } catch {
-    return fail(deps, EXIT.network, "network", `Couldn't reach ${new URL(origin).origin}.`);
-  }
-
-  const text = await res.text();
-  let body: unknown;
-  try {
-    body = JSON.parse(text);
-  } catch {
-    return fail(deps, EXIT.refused, "bad_response", `The server answered HTTP ${res.status} with something that isn't JSON.`);
-  }
-
-  if (res.ok) {
-    deps.stdout(`${JSON.stringify(body, null, 2)}\n`);
-    return EXIT.ok;
-  }
-
-  const api = (typeof body === "object" && body !== null ? body : {}) as { error?: unknown; message?: unknown; errors?: unknown };
-  const code = typeof api.error === "string" ? api.error : `http_${res.status}`;
-  let message = typeof api.message === "string" ? api.message : `The request failed with HTTP ${res.status}.`;
-  const extra = api.errors !== undefined ? { errors: api.errors } : {};
-
-  const authFailure = res.status === 401 || res.status === 403 || res.status === 503;
-  if (res.status === 401 || res.status === 403) {
-    if (!message.includes("accomplishments login")) message = `${message} ${NEEDS_LOGIN}`;
-  }
-  return fail(deps, authFailure ? EXIT.auth : EXIT.refused, code, message, extra);
+  const outcome = await callApi(deps, token, request);
+  if (!outcome.ok) return report(deps, outcome);
+  deps.stdout(`${JSON.stringify(outcome.body, null, 2)}\n`);
+  return EXIT.ok;
 }

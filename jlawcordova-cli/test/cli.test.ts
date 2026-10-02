@@ -57,6 +57,10 @@ async function cli(argv: string[], opts: { stdin?: string; env?: Record<string, 
       keychainReads++;
       return opts.keychain;
     },
+    storeToken: async () => {},
+    platform: "darwin",
+    sleep: async () => {},
+    openUrl: async () => {},
     stdout: (t) => (stdout += t),
     stderr: (t) => (stderr += t),
   };
