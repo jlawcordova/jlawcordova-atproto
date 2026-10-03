@@ -140,6 +140,12 @@ None. Details are in [`spec.md`](spec.md).
    kept), and the record was deleted. C5 passed: `cli-v1.1.0` released in
    run 37162070690; installed from `releases/latest`, `--help` lists
    `update` and `list` returns 9 records, and the skill zip matches the
-   repo. Not verified yet: S1, S3 to S6 (real skill runs) and M4 (step 9).
+   repo. Step 9: the dry run showed 9 records to update and
+   none skipped; the owner approved `--write`, which updated all 9. M4
+   passed: compared with a snapshot taken just before, every record gained
+   exactly its approved `funTitle`, `shortDescription` and `icon` and no
+   other field changed, and a rerun of the dry run found 0 to update. The
+   migration script and its test are deleted. Not verified yet: S1, S3 to
+   S6 (real skill runs).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
