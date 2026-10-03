@@ -142,7 +142,7 @@ None. Details are in [`spec.md`](spec.md).
 3. **Plan** — the build order in [`spec.md`](spec.md#8-build-order) — done.
 4. **Implement & verify** — one step at a time with tests, including an
    end-to-end check against the real Worker and PDS (asking before writing real
-   data or deploying).
+   data or deploying) — in progress: build steps 2 to 5 are merged (#10 to #13).
 5. **Deploy & operate** — redeploy the Worker, install the command, update the
    skill, and confirm the success criteria.
 6. **Close** — mark this intent and the spec **Closed** and update the index.
