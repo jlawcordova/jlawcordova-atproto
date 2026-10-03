@@ -25,9 +25,10 @@ failure. Exit codes: 0 success, 1 the API refused or failed, 2 bad usage,
 
 - Run `accomplishments list --limit 1`.
   - Exit 3: tell J. Law to run `accomplishments login` and stop.
-  - Command not found: say to install it with `npm link` from the
-    `jlawcordova-cli` folder of the `jlawcordova-atproto` repo (see
-    `docs/cli-setup.md` there), and stop.
+  - Command not found: say to install it with
+    `npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz`
+    (Node 22 or later; `docs/cli-setup.md` in that repo has the details),
+    then run `accomplishments login`, and stop.
   - Exit 4: the Worker can't be reached. Say so and stop.
 - Run `gh auth status` to find the active GitHub account. Name that account in
   the report. Any account is fine to read from: work and personal accounts

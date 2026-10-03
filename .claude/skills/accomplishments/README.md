@@ -38,7 +38,17 @@ No connectors are needed. You need:
 - **`gh`**, signed in to any GitHub account to read activity from.
 - **The `accomplishments` CLI**, installed and signed in as `jlawcordova`.
 
-[`docs/cli-setup.md`](../../../docs/cli-setup.md) covers installing the CLI,
-signing in, the permission rule for `accomplishments list`, and linking this
-skill into `~/.claude/skills` so it works from any directory. Sessions on this
-repo load it from `.claude/skills/` without that link.
+Both come from the latest
+[release](https://github.com/jlawcordova/jlawcordova-atproto/releases):
+
+```sh
+npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz
+curl -sL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-skill.zip -o /tmp/accomplishments-skill.zip
+unzip -o /tmp/accomplishments-skill.zip -d ~/.claude/skills
+accomplishments login
+```
+
+[`docs/cli-setup.md`](https://github.com/jlawcordova/jlawcordova-atproto/blob/main/docs/cli-setup.md)
+covers signing in, the permission rule for `accomplishments list`, installing
+from a clone instead, and releasing. Sessions on this repo load the skill from
+`.claude/skills/` without installing it.

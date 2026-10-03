@@ -7,10 +7,10 @@ How to install the `accomplishments` CLI, sign in, and use the
 
 ```mermaid
 flowchart LR
-    Flow["1. Device Flow on"] --> Link["2. npm link"]
+    Flow["1. Device Flow on"] --> Link["2. Install the CLI"]
     Link --> Login["3. accomplishments login"]
     Login --> Perm["4. Permission rule"]
-    Perm --> Skill["5. Link the skill"]
+    Perm --> Skill["5. Install the skill"]
 ```
 
 ## 1. Turn on Device Flow (once)
@@ -23,12 +23,22 @@ tick **Enable Device Flow**, and save. The app's client ID must match
 
 ## 2. Install the command
 
-The CLI runs from this repo on Node 22. It isn't published to npm.
+The CLI needs Node 22 or later. Install it from the latest
+[release](https://github.com/jlawcordova/jlawcordova-atproto/releases), with
+no clone needed:
+
+```sh
+npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz
+accomplishments list --limit 1   # exit 3 means "not signed in yet"
+```
+
+**For development**, link it from a clone instead. `npm install` builds
+`dist/` (the package's `prepare` script), and the link runs that build, so run
+`npm run build -w jlawcordova-cli` after changing `src/`:
 
 ```sh
 npm install
 cd jlawcordova-cli && npm link
-accomplishments list --limit 1   # exit 3 means "not signed in yet"
 ```
 
 ## 3. Sign in
@@ -62,17 +72,28 @@ To get the same outside this repo, add the rule to `~/.claude/settings.json`.
 `add` and `delete` are left out on purpose, so Claude Code asks before every
 write.
 
-## 5. Use the skill from any directory
+## 5. Install the skill
 
 Sessions on this repo load the skill from `.claude/skills/accomplishments`.
-To use it anywhere, link it into your user skills:
+To use it from any directory, install it into your user skills from the latest
+release:
+
+```sh
+curl -sL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-skill.zip -o /tmp/accomplishments-skill.zip
+unzip -o /tmp/accomplishments-skill.zip -d ~/.claude/skills
+```
+
+Or, from a clone, link it so it follows the repo (run from the repo root):
 
 ```sh
 ln -s "$PWD/.claude/skills/accomplishments" ~/.claude/skills/accomplishments
 ```
 
-Run that from the repo root. Then ask Claude Code to "draft my
-accomplishments".
+Use one or the other. If `~/.claude/skills/accomplishments` is already a link,
+`rm` it before unzipping, or the zip writes into the clone.
+
+The same zip uploads to claude.ai as a custom skill. Then ask Claude Code to
+"draft my accomplishments".
 
 ## Sign out and revoke
 
@@ -86,3 +107,22 @@ accomplishments".
   **Authorized OAuth Apps** → `jlawcordova-mcp` → **Revoke**. The token has no
   scopes, so it can't read or change anything on GitHub, but revoke it if the
   machine is lost.
+
+## Releasing a new version
+
+The CLI and the skill are released together, with the version in
+`jlawcordova-cli/package.json` (spec section 4.7).
+
+1. Bump `version` in `jlawcordova-cli/package.json` in a PR (run
+   `npm install` so `package-lock.json` follows), and merge it.
+2. Tag the merge on `main` and push the tag:
+
+   ```sh
+   git fetch origin && git tag cli-v<version> origin/main && git push origin cli-v<version>
+   ```
+
+The **Release the accomplishments CLI and skill** workflow checks that the tag
+matches the version and is on `main`, runs the tests, smoke-tests the installed
+package, and publishes `accomplishments-cli.tgz` and
+`accomplishments-skill.zip`. If a guard fails, nothing is published: delete the
+tag (`git push origin :refs/tags/cli-v<version>`), fix it, and tag again.
