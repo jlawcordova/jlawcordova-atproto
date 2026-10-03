@@ -1,6 +1,6 @@
 # Spec: Accomplishments CLI for Claude Code
 
-> Status: **v1.0** — Owner: J. Law Cordova — Date: 2026-10-03
+> Status: **v1.1** — Owner: J. Law Cordova — Date: 2026-10-03
 
 Implements [`intent.md`](intent.md). Where they disagree, the intent wins and
 this spec gets fixed.
@@ -44,6 +44,7 @@ flowchart TB
 | CLI | `jlawcordova-cli/` | New workspace package |
 | Skill | `.claude/skills/accomplishments/` | Renamed from `accomplishments-inbox` and rewritten (section 5) |
 | Docs | `docs/cli-setup.md` | New |
+| Release | `.github/workflows/release-cli.yml` | New. Publishes the CLI and skill on a `cli-v*` tag (section 4.7) |
 
 The Lexicon, `shared`, the MCP endpoint's behavior, and the portfolio don't
 change.
@@ -153,12 +154,19 @@ No new variables or secrets. It uses `GITHUB_CLIENT_ID`, the existing
 
 ### 4.1 Package
 
-- Workspace package `jlawcordova-cli` with `"bin": { "accomplishments": "src/main.ts" }`.
-- Node 22.18 or later runs the TypeScript directly (type stripping), so there
-  is no build step. Source uses `.ts` import suffixes and erasable syntax only.
+- Workspace package `jlawcordova-cli` with `"bin": { "accomplishments": "dist/main.js" }`.
+- Source is TypeScript with `.ts` import suffixes and erasable syntax only.
+  Tests and `typecheck` run it directly. Node 22 refuses to strip types from
+  files inside `node_modules`, so an installed package can't run `src/*.ts`:
+  `npm run build` compiles `src` to `dist` with `tsconfig.build.json`
+  (`rewriteRelativeImportExtensions`, so imports point at `.js`). `prepare`
+  runs the build, so `npm link` and `npm pack` always use fresh output.
+  `dist/` is git-ignored.
+- `"files": ["dist"]`: the package holds `package.json` and `dist/` only.
 - **No runtime dependencies.** It uses `fetch`, `node:child_process`, and
   `node:util`. Dev dependencies match the other packages.
-- Install: `npm link` in the package directory puts `accomplishments` on the PATH.
+- Install: from a release (4.7), or `npm link` in the package directory for
+  development.
 
 ### 4.2 Configuration
 
@@ -236,6 +244,35 @@ account `default`.
 - To sign out: `security delete-generic-password -s jlawcordova-accomplishments`.
   To revoke fully: GitHub → Settings → Applications → Authorized OAuth Apps.
 
+### 4.7 Releases
+
+One GitHub Release carries both the CLI and the skill, with one version: the
+`version` in `jlawcordova-cli/package.json`, starting at `1.0.0`.
+
+- **Trigger:** pushing a tag `cli-v<version>` runs
+  `.github/workflows/release-cli.yml` (permissions: `contents: write` only).
+- **Guards**, before anything is published: the tag's version equals
+  `package.json`'s, and the tagged commit is on `main`. Either failing stops
+  the run with no release.
+- **Checks:** `npm ci`, `npm test`, `npm run typecheck`.
+- **Assets**, with fixed names so `releases/latest/download/<name>` always
+  points at the newest:
+  - `accomplishments-cli.tgz`: `npm pack` of `jlawcordova-cli`.
+  - `accomplishments-skill.zip`: the `accomplishments/` folder from
+    `.claude/skills/`, with `SKILL.md` and `README.md`.
+- **Smoke test** on the runner before publishing: install the tarball with
+  `npm install -g --prefix <temp>`, then `accomplishments --help` exits 2, and
+  `list` with no token exits 3 without a request.
+- **Publish:** `gh release create <tag> <assets> --title "accomplishments <version>"
+  --generate-notes`.
+- **Install:**
+  ```sh
+  npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz
+  curl -sL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-skill.zip -o /tmp/accomplishments-skill.zip
+  unzip -o /tmp/accomplishments-skill.zip -d ~/.claude/skills
+  ```
+  The same zip uploads to claude.ai as a custom skill.
+
 ## 5. Skill (`.claude/skills/accomplishments/`)
 
 Renamed from `accomplishments-inbox`: with no inbox, the old name misleads. The
@@ -280,7 +317,8 @@ retired with this change; whether to replace it is a separate decision.
 
 ## 6. Documentation (`docs/cli-setup.md`)
 
-Covers: turning on Device Flow for the OAuth App; `npm link`; `accomplishments
+Covers: turning on Device Flow for the OAuth App; installing the CLI and the
+skill from the latest release, or with `npm link` from the repo; `accomplishments
 login`; the permission rule `Bash(accomplishments list:*)` for
 `.claude/settings.json` (`add` and `delete` are left to prompt); linking the
 skill into `~/.claude/skills/accomplishments` so it works from any directory;
@@ -348,6 +386,18 @@ signing out and revoking.
 | S6 | The saved records appear on the portfolio after the rebuild |
 | S7 | After `accomplishments login` as `jlawcordova`, `list` works with `gh` signed in to a different account |
 
+### Release
+
+| # | Test |
+| --- | --- |
+| P1 | `npm run build` writes `dist/*.js` with `.js` imports and `main.js`'s shebang; `npm test` and `npm run typecheck` still pass |
+| P2 | The packed tarball holds only `package.json` and `dist/`: no `src`, `test`, or tsconfig files |
+| P3 | Installed globally from the tarball (so it runs from `node_modules`), `accomplishments --help` exits 2 with usage, and `list` with no token exits 3 without a request |
+| P4 | The skill zip unpacks to `accomplishments/SKILL.md` and `accomplishments/README.md`; unzipped into `~/.claude/skills`, the skill loads in Claude Code |
+| P5 | A `cli-v*` tag whose version doesn't match `package.json`, or whose commit isn't on `main`, fails the workflow and creates no release |
+| P6 | A matching tag on `main` creates one release with both assets; the `latest/download` install commands work, and after `login`, `list` works |
+| P7 | `npm link` from the repo still gives a working `accomplishments` |
+
 ## 8. Build order
 
 Each step ends green (`npm test`, `npm run typecheck`) before the next.
@@ -371,4 +421,11 @@ Each step ends green (`npm test`, `npm run typecheck`) before the next.
 8. **Skill and docs.** Rename and rewrite the skill, delete the inbox page,
    write `docs/cli-setup.md`, link the skill into `~/.claude/skills`, and add the
    `list` permission rule. *Passes: S1 to S5.*
-9. **Close.** Mark the intent and this spec **Closed** and update the index.
+9. **Releases** (added in v1.1). Add the build (`tsconfig.build.json`,
+   `build` and `prepare` scripts, `bin` and `files`), the release workflow, and
+   the install steps in `docs/cli-setup.md` and the skill's README and
+   preflight. Before tagging, run the workflow's steps locally up to
+   `gh release create`. Then (ask first) push a mismatched tag such as
+   `cli-v0.0.0` to see the guard fail, delete it, push `cli-v1.0.0`, and
+   install from the release. *Passes: P1 to P7.*
+10. **Close.** Mark the intent and this spec **Closed** and update the index.
