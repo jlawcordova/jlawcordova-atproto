@@ -156,7 +156,8 @@ None. Details are in [`spec.md`](spec.md).
    step 6 is verified against the deployed Worker (A1, A4, S7), and step 7's
    real write, read-back, and delete passed (A10, A14, S6). Step 8's skill,
    docs, and permission rule are done, with S1 to S5 passing. Build step 9,
-   releases, was added in v1.1.
+   releases, was added in v1.1: the build, workflow, and docs are in place,
+   P1 to P3 and P7 pass locally, and P4 to P6 wait on the first release tag.
 5. **Deploy & operate** — redeploy the Worker, install the command, update the
    skill, publish the first release, and confirm the success criteria.
 6. **Close** — mark this intent and the spec **Closed** and update the index.

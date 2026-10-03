@@ -1,0 +1,91 @@
+name: Release the accomplishments CLI and skill
+
+# Pushing a tag like cli-v1.0.0 publishes one GitHub Release with the CLI
+# package and the skill zip (spec section 4.7).
+on:
+  push:
+    tags: ["cli-v*"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-cli-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+
+      # Guards: nothing below runs unless the tag matches the package version
+      # and the tagged commit is on main.
+      - name: Check the tag matches the CLI version
+        run: |
+          version="${GITHUB_REF_NAME#cli-v}"
+          package_version="$(node -p "require('./jlawcordova-cli/package.json').version")"
+          if [ "$version" != "$package_version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME doesn't match jlawcordova-cli version $package_version."
+            exit 1
+          fi
+          echo "VERSION=$version" >> "$GITHUB_ENV"
+      - name: Check the tagged commit is on main
+        run: |
+          git fetch --no-tags origin main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::$GITHUB_REF_NAME points at a commit that isn't on main."
+            exit 1
+          fi
+
+      # `npm ci` runs the CLI's prepare script, which builds dist/.
+      - name: Install
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Test
+        run: npm test
+
+      - name: Pack the CLI
+        run: |
+          npm pack -w jlawcordova-cli --pack-destination "$RUNNER_TEMP"
+          mv "$RUNNER_TEMP/jlawcordova-cli-$VERSION.tgz" "$RUNNER_TEMP/accomplishments-cli.tgz"
+      - name: Zip the skill
+        working-directory: .claude/skills
+        run: |
+          zip -r "$RUNNER_TEMP/accomplishments-skill.zip" accomplishments
+          unzip -l "$RUNNER_TEMP/accomplishments-skill.zip" | grep -q " accomplishments/SKILL.md$"
+          unzip -l "$RUNNER_TEMP/accomplishments-skill.zip" | grep -q " accomplishments/README.md$"
+
+      # Installs the tarball the way a user would, so the command runs from
+      # node_modules. There's no keychain here, so `list` must stop at exit 3;
+      # the unreachable URL turns any request into exit 4 instead.
+      - name: Smoke test the installed CLI
+        env:
+          ACCOMPLISHMENTS_URL: http://127.0.0.1:9
+        run: |
+          prefix="$RUNNER_TEMP/prefix"
+          npm install -g --prefix "$prefix" "$RUNNER_TEMP/accomplishments-cli.tgz"
+          status=0; "$prefix/bin/accomplishments" --help || status=$?
+          [ "$status" -eq 2 ] || { echo "::error::--help exited $status, expected 2."; exit 1; }
+          status=0; "$prefix/bin/accomplishments" list || status=$?
+          [ "$status" -eq 3 ] || { echo "::error::list with no token exited $status, expected 3."; exit 1; }
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "$RUNNER_TEMP/accomplishments-cli.tgz" \
+            "$RUNNER_TEMP/accomplishments-skill.zip" \
+            --title "accomplishments $VERSION" \
+            --generate-notes \
+            --verify-tag

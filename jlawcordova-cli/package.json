@@ -1,18 +1,23 @@
 {
   "name": "jlawcordova-cli",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "bin": {
-    "accomplishments": "src/main.ts"
+    "accomplishments": "dist/main.js"
   },
   "scripts": {
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "prepare": "npm run build"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
     "typescript": "7.0.2",
     "vitest": "4.1.11"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }
