@@ -10,7 +10,12 @@ export interface Accomplishment {
   $type?: typeof NSID;
   title: string;
   description: string;
-  startDate: string; // YYYY-MM
+  funTitle?: string;
+  shortDescription?: string;
+  icon?: string;
+  /** False marks a locked accomplishment (a goal not reached yet). Absent means done. */
+  done?: boolean;
+  startDate?: string; // YYYY-MM, absent only while locked
   endDate?: string; // YYYY-MM
   tags?: string[];
   links?: string[];
@@ -42,9 +47,15 @@ const BASELINE: Record<string, unknown> = {
   createdAt: "2000-01-01T00:00:00Z",
 };
 
+/** `read` accepts every record stored so far; `write` also requires the gamified fields. */
+export interface ValidateOptions {
+  mode?: "read" | "write";
+}
+
 const MONTH = /^(\d{4})-(0[1-9]|1[0-2])$/;
 const MIN_YEAR = 1970;
 const MAX_YEAR = 2100;
+const KEBAB_CASE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
 function isMonth(value: unknown): value is string {
   if (typeof value !== "string") return false;
@@ -52,6 +63,11 @@ function isMonth(value: unknown): value is string {
   if (!match) return false;
   const year = Number(match[1]);
   return year >= MIN_YEAR && year <= MAX_YEAR;
+}
+
+function wordCount(value: string): number {
+  const text = value.trim();
+  return text === "" ? 0 : text.split(/\s+/).length;
 }
 
 function isHttpUrl(value: string): boolean {
@@ -92,13 +108,45 @@ function checkSchema(record: Record<string, unknown>, errors: ValidationError[])
   }
 }
 
-function checkExtraRules(record: Record<string, unknown>, errors: ValidationError[]): void {
-  const { title, description, startDate, endDate, tags, links } = record;
+function checkExtraRules(record: Record<string, unknown>, mode: "read" | "write", errors: ValidationError[]): void {
+  const { title, description, startDate, endDate, tags, links, icon, done } = record;
 
   for (const [field, value] of [["title", title], ["description", description]] as const) {
     if (typeof value === "string" && value === "") {
       errors.push({ field, message: "must not be empty" });
     }
+  }
+
+  if (done !== undefined && typeof done !== "boolean") {
+    errors.push({ field: "done", message: "must be a boolean" });
+  }
+  if (typeof icon === "string" && icon !== "" && !KEBAB_CASE.test(icon)) {
+    errors.push({ field: "icon", message: "must be lowercase kebab-case" });
+  }
+
+  // A locked record is a goal not reached yet, so it has no dates.
+  if (done === false) {
+    for (const field of ["startDate", "endDate"] as const) {
+      if (record[field] !== undefined) errors.push({ field, message: "must be absent while done is false" });
+    }
+  } else if (startDate === undefined) {
+    errors.push({ field: "startDate", message: "is required unless done is false" });
+  }
+
+  if (mode === "write") {
+    for (const [field, min, max, message] of [
+      ["funTitle", 1, 3, "must be one to three words"],
+      ["shortDescription", 5, 7, "must be five to seven words"],
+    ] as const) {
+      const value = record[field];
+      if (value === undefined || value === "") {
+        errors.push({ field, message: "is required" });
+      } else if (typeof value === "string") {
+        const words = wordCount(value);
+        if (words < min || words > max) errors.push({ field, message });
+      }
+    }
+    if (icon === undefined || icon === "") errors.push({ field: "icon", message: "is required" });
   }
 
   const startOk = isMonth(startDate);
@@ -140,9 +188,11 @@ function checkExtraRules(record: Record<string, unknown>, errors: ValidationErro
 /**
  * Validates an accomplishment record against the Lexicon plus the rules the
  * Lexicon can't express. Returns the value as given, apart from trimming
- * `title`, `description`, and tags. `createdAt` must already be set.
+ * `title`, `description`, `funTitle`, `shortDescription` and tags. `createdAt`
+ * must already be set. Write mode is for new and changed records; read mode
+ * keeps every record stored so far valid.
  */
-export function validateAccomplishment(input: unknown): ValidationResult {
+export function validateAccomplishment(input: unknown, { mode = "read" }: ValidateOptions = {}): ValidationResult {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     return { ok: false, errors: [{ field: "record", message: "must be an object" }] };
   }
@@ -150,6 +200,8 @@ export function validateAccomplishment(input: unknown): ValidationResult {
   const record: Record<string, unknown> = { ...input };
   record.title = trimmed(record.title);
   record.description = trimmed(record.description);
+  record.funTitle = trimmed(record.funTitle);
+  record.shortDescription = trimmed(record.shortDescription);
   if (Array.isArray(record.tags)) record.tags = record.tags.map(trimmed);
   for (const key of PROPERTIES) if (record[key] === undefined) delete record[key];
 
@@ -160,7 +212,7 @@ export function validateAccomplishment(input: unknown): ValidationResult {
 
   // Extra rules first: their messages are more specific than the Lexicon's
   // (e.g. "must be YYYY-MM" over "must not be shorter than 7 characters").
-  checkExtraRules(record, errors);
+  checkExtraRules(record, mode, errors);
   const extraFields = new Set(errors.map((e) => e.field));
   const lexiconErrors: ValidationError[] = [];
   checkSchema(record, lexiconErrors);
@@ -170,21 +222,33 @@ export function validateAccomplishment(input: unknown): ValidationResult {
   return { ok: true, value: record as unknown as Accomplishment };
 }
 
+const isLocked = (a: Accomplishment) => a.done === false;
+
 function sortKey(a: Accomplishment): string {
-  return a.endDate ?? a.startDate;
+  return a.endDate ?? a.startDate ?? "";
 }
 
 function createdAtMillis(value: string): number {
   return Date.parse(value);
 }
 
-/** Newest first: `endDate ?? startDate` descending, then `createdAt` descending. */
-export function compareAccomplishments(a: Accomplishment, b: Accomplishment): number {
-  const ka = sortKey(a);
-  const kb = sortKey(b);
-  if (ka !== kb) return ka < kb ? 1 : -1;
+function compareCreatedAt(a: Accomplishment, b: Accomplishment): number {
   const ta = createdAtMillis(a.createdAt);
   const tb = createdAtMillis(b.createdAt);
   if (!Number.isNaN(ta) && !Number.isNaN(tb)) return tb - ta;
   return a.createdAt === b.createdAt ? 0 : a.createdAt < b.createdAt ? 1 : -1;
+}
+
+/**
+ * Locked records first, newest `createdAt` first, so a limit never cuts them
+ * off. Then done records, newest first: `endDate ?? startDate` descending,
+ * then `createdAt` descending.
+ */
+export function compareAccomplishments(a: Accomplishment, b: Accomplishment): number {
+  if (isLocked(a) !== isLocked(b)) return isLocked(a) ? -1 : 1;
+  if (isLocked(a)) return compareCreatedAt(a, b);
+  const ka = sortKey(a);
+  const kb = sortKey(b);
+  if (ka !== kb) return ka < kb ? 1 : -1;
+  return compareCreatedAt(a, b);
 }

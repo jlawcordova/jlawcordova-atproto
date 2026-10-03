@@ -120,7 +120,7 @@ export async function listAccomplishments(
     else skippedInvalid++;
   }
   const matching = valid
-    .filter((r) => since === undefined || (r.value.endDate ?? r.value.startDate) >= since)
+    .filter((r) => since === undefined || (r.value.endDate ?? r.value.startDate ?? "") >= since)
     .sort((a, b) => compareAccomplishments(a.value, b.value));
 
   return { ok: true, value: { items: matching.slice(0, limit ?? DEFAULT_LIMIT), total: matching.length, skippedInvalid } };
