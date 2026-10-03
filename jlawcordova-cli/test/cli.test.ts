@@ -140,7 +140,7 @@ describe("add", () => {
 });
 
 describe("update", () => {
-  it("C1: sends stdin unchanged as the PATCH body to the URL-encoded rkey and prints the 200 body", async () => {
+  it("update C1: sends stdin unchanged as the PATCH body to the URL-encoded rkey and prints the 200 body", async () => {
     reply = { status: 200, body: { rkey: "a/b?c", updated: ["done"], rebuild: "triggered" } };
     const stdin = `{ "done":true,\n  "startDate": "2026-01" }\n`;
     const out = await cli(["update", "a/b?c"], { stdin });
@@ -155,7 +155,7 @@ describe("update", () => {
     expect(seen[0]!.headers.authorization).toBe(`Bearer ${TOKEN}`);
   });
 
-  it("C2: update with no rkey exits 2 and sends nothing", async () => {
+  it("update C2: update with no rkey exits 2 and sends nothing", async () => {
     const out = await cli(["update"], { stdin: '{"done":true}' });
     expect(out.code).toBe(2);
     expect(JSON.parse(out.stderr.slice(0, out.stderr.indexOf("}\n") + 1)).error).toBe("usage");
@@ -164,7 +164,7 @@ describe("update", () => {
     expect(seen).toHaveLength(0);
   });
 
-  it("C2: update with empty stdin or a non-object exits 2 and sends nothing", async () => {
+  it("update C2: update with empty stdin or a non-object exits 2 and sends nothing", async () => {
     for (const stdin of ["", "   \n", "not json", "[1]", "null", '"text"', "42"]) {
       const out = await cli(["update", "3jzfcijpj2z2a"], { stdin });
       expect(out.code, JSON.stringify(stdin)).toBe(2);
@@ -174,7 +174,7 @@ describe("update", () => {
     expect(seen).toHaveLength(0);
   });
 
-  it("C3: 404, 409 and 422 exit 1 with the error on stderr and nothing on stdout", async () => {
+  it("update C3: 404, 409 and 422 exit 1 with the error on stderr and nothing on stdout", async () => {
     const errors = [{ field: "icon", message: "must be an emoji" }];
     for (const [status, body] of [
       [404, { error: "not_found", message: "Not found: no accomplishment with rkey x." }],
@@ -280,7 +280,7 @@ describe("token lookup", () => {
 });
 
 describe("usage", () => {
-  it("C4: usage text lists update, and --help still exits 2", async () => {
+  it("update C4: usage text lists update, and --help still exits 2", async () => {
     const out = await cli(["--help"]);
     expect(out.code).toBe(2);
     expect(out.stderr).toContain("accomplishments update <rkey>");
