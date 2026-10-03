@@ -402,6 +402,17 @@ describe("PATCH /api/accomplishments/{rkey}", () => {
     expect(valueOf(rkey).icon).toBe("key");
   });
 
+  it("U12: update_accomplishment gives the same result as PATCH for the same input", async () => {
+    const viaApi = seed();
+    const viaTool = seed();
+    const input = { icon: "trophy", endDate: null, done: true };
+    const api = await patch(viaApi, input);
+    const tool = (await callTool("update_accomplishment", { rkey: viaTool, patch: input })).json();
+    expect(tool.record).toEqual(api.json.record);
+    expect(tool.rebuild).toBe(api.json.rebuild);
+    expect(valueOf(viaTool)).toEqual(valueOf(viaApi));
+  });
+
   it("U9: no token → 401, another user → 403, and nothing is written", async () => {
     const rkey = seed();
     expect((await patch(rkey, { icon: "bug" }, null)).status).toBe(401);

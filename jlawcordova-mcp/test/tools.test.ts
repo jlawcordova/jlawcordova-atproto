@@ -30,6 +30,7 @@ describe("authorization of tool calls", () => {
     for (const props of [{ githubId: 1, login: "jlawcordova" }, { login: "jlawcordova" }, {}]) {
       for (const [tool, args] of [
         ["add_accomplishment", valid],
+        ["update_accomplishment", { rkey: tid(1), patch: { icon: "bug" } }],
         ["delete_accomplishment", { rkey: tid(1) }],
         ["list_accomplishments", {}],
       ] as const) {
@@ -123,6 +124,60 @@ describe("add_accomplishment gamified fields", () => {
     expect(long.text).toContain("- shortDescription: must be five to seven words");
     expect(long.text).toContain("- icon: is required");
     expect(net.callsTo("createRecord")).toHaveLength(0);
+  });
+});
+
+describe("update_accomplishment", () => {
+  const gamified = { funTitle: "Speed Demon", shortDescription: "Deploys now finish in six minutes", icon: "rocket" };
+  const seed = () => net.addRecord(stored({ ...gamified, tags: ["CI"] }));
+  const valueOf = (rkey: string) => net.records.get(rkey)!.value as Record<string, unknown>;
+
+  it("U12: updates a record the way PATCH does and returns the same shape", async () => {
+    const rkey = seed();
+    const before = structuredClone(valueOf(rkey));
+    const result = await callTool("update_accomplishment", { rkey, patch: { icon: "trophy", tags: null } });
+    expect(result.isError).toBe(false);
+    const { tags: _, ...rest } = before;
+    expect(valueOf(rkey)).toEqual({ ...rest, icon: "trophy" });
+    expect(result.json()).toEqual({
+      rkey,
+      uri: net.records.get(rkey)!.uri,
+      cid: net.records.get(rkey)!.cid,
+      record: valueOf(rkey),
+      rebuild: "triggered",
+    });
+    const [put] = net.callsTo("putRecord");
+    expect(JSON.parse(put!.body).swapRecord).toBe("bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm");
+    expect(net.callsTo("/dispatches")).toHaveLength(1);
+  });
+
+  it("U12: refuses what PATCH refuses, with the same messages, and writes nothing", async () => {
+    const rkey = seed();
+    const invalid = await callTool("update_accomplishment", { rkey, patch: { funTitle: "One two three four", startDate: "2026-13" } });
+    expect(invalid.isError).toBe(true);
+    expect(invalid.text).toContain("- funTitle: must be one to three words");
+    expect(invalid.text).toContain("- startDate:");
+
+    const empty = await callTool("update_accomplishment", { rkey, patch: {} });
+    expect(empty.text).toBe("Nothing to update.");
+    const unknown = await callTool("update_accomplishment", { rkey, patch: { organization: "Acme" } });
+    expect(unknown.text).toContain("- organization: is not a known field");
+    const bad = await callTool("update_accomplishment", { rkey: "nope", patch: { icon: "bug" } });
+    expect(bad.isError).toBe(true);
+    const missing = await callTool("update_accomplishment", { rkey: tid(30), patch: { icon: "bug" } });
+    expect(missing.text).toContain("Not found");
+
+    expect(net.callsTo("putRecord")).toHaveLength(0);
+    expect(net.callsTo("/dispatches")).toHaveLength(0);
+  });
+
+  it("U12: a concurrent change is reported as a conflict", async () => {
+    const rkey = seed();
+    net.beforePut = (key) => net.putRecord(key, { ...valueOf(key), title: "Changed elsewhere" });
+    const result = await callTool("update_accomplishment", { rkey, patch: { icon: "key" } });
+    expect(result.isError).toBe(true);
+    expect(result.text).toBe("The record changed while updating. Try again.");
+    expect(valueOf(rkey)).toMatchObject({ title: "Changed elsewhere", icon: "rocket" });
   });
 });
 
