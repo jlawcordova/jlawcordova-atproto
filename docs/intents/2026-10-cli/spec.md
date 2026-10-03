@@ -1,6 +1,6 @@
 # Spec: Accomplishments CLI for Claude Code
 
-> Status: **Draft** (v0.1) — Owner: J. Law Cordova — Date: 2026-10-02
+> Status: **v1.0** — Owner: J. Law Cordova — Date: 2026-10-03
 
 Implements [`intent.md`](intent.md). Where they disagree, the intent wins and
 this spec gets fixed.
