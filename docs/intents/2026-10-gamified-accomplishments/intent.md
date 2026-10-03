@@ -131,7 +131,15 @@ None. Details are in [`spec.md`](spec.md).
    text: checked against the live `list` output. S2 passed on 2026-10-04:
    the owner approved drafts for the nine real records and a goal, and kept
    the skill's two added rules (future-tense goals, an optional new
-   description on marking done). Not verified yet: S1, S3 to S6 (need a
-   real run after step 8), C5, D1, D2 and M4.
+   description on marking done). Step 8: #21 merged as `adf75f3` (squash, the
+   only method the repo allows) and the Worker deployed in run 37161949562.
+   D1 passed: `list` returned the same 9 records, none skipped, and after
+   the rebuild (run 37162055169) the live site showed 9 accomplishment
+   cards. D2 passed: throwaway record `3mwz27lfqlu2p` was added, an update
+   of `shortDescription` changed only that field (rkey and `createdAt`
+   kept), and the record was deleted. C5 passed: `cli-v1.1.0` released in
+   run 37162070690; installed from `releases/latest`, `--help` lists
+   `update` and `list` returns 9 records, and the skill zip matches the
+   repo. Not verified yet: S1, S3 to S6 (real skill runs) and M4 (step 9).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
