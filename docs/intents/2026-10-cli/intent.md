@@ -145,7 +145,7 @@ None. Details are in [`spec.md`](spec.md).
    data or deploying) — in progress: build steps 2 to 5 are merged (#10 to #13),
    step 6 is verified against the deployed Worker (A1, A4, S7), and step 7's
    real write, read-back, and delete passed (A10, A14, S6). Step 8's skill,
-   docs, and permission rule are in place; S1 and S2 pass, and S3 to S5 are
+   docs, and permission rule are in place; S1 to S3 pass, and S4 and S5 are
    still to verify.
 5. **Deploy & operate** — redeploy the Worker, install the command, update the
    skill, and confirm the success criteria.
