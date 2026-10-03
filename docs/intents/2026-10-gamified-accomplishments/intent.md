@@ -145,7 +145,10 @@ None. Details are in [`spec.md`](spec.md).
    passed: compared with a snapshot taken just before, every record gained
    exactly its approved `funTitle`, `shortDescription` and `icon` and no
    other field changed, and a rerun of the dry run found 0 to update. The
-   migration script and its test are deleted. Not verified yet: S1, S3 to
-   S6 (real skill runs).
+   migration script and its test are deleted. S1 passed on 2026-10-04 in a real
+   run: each draft in the selector showed a fun title, a short description
+   with its word count and an icon from the fetched list, then the plain
+   title; of two drafts only the chosen one was saved (`3mwz2zhj3zi2w`).
+   Not verified yet: S3 to S6 (real skill runs).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
