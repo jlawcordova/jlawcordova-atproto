@@ -87,8 +87,15 @@ export function createServer(env: Env): McpServer {
       inputSchema: z.object({
         title: z.string().describe("Short headline, up to 200 characters."),
         description: z.string().describe("What was done and its impact, impact first. Up to 1000 characters."),
-        startDate: z.string().describe("Month it started or happened, as YYYY-MM."),
-        endDate: z.string().optional().describe("Month it finished, as YYYY-MM. Omit if ongoing or a single month."),
+        funTitle: z.string().describe("Playful name for the achievement list, one to three words."),
+        shortDescription: z.string().describe("A line under the fun title, five to seven words."),
+        icon: z.string().describe("Icon ID in lowercase kebab-case, such as sprout, rocket or trophy."),
+        done: z.boolean().optional().describe("False saves a locked goal that has no dates. Defaults to true."),
+        startDate: z
+          .string()
+          .optional()
+          .describe("Month it started or happened, as YYYY-MM. Required unless done is false, when it must be omitted."),
+        endDate: z.string().optional().describe("Month it finished, as YYYY-MM. Omit if ongoing, a single month or locked."),
         tags: z.array(z.string()).optional().describe("Up to 10 skills, technologies, or themes."),
         links: z.array(z.string()).optional().describe("Up to 10 http(s) links as evidence."),
       }),

@@ -31,7 +31,11 @@ export type Result<T> = { ok: true; value: T } | Failure;
 export interface AddInput {
   title: string;
   description: string;
-  startDate: string;
+  funTitle: string;
+  shortDescription: string;
+  icon: string;
+  done?: boolean;
+  startDate?: string;
   endDate?: string;
   tags?: string[];
   links?: string[];
@@ -120,23 +124,31 @@ export async function listAccomplishments(
     else skippedInvalid++;
   }
   const matching = valid
-    .filter((r) => since === undefined || (r.value.endDate ?? r.value.startDate ?? "") >= since)
+    // Locked records have no dates, so a month filter never hides them.
+    .filter((r) => since === undefined || r.value.done === false || (r.value.endDate ?? r.value.startDate ?? "") >= since)
     .sort((a, b) => compareAccomplishments(a.value, b.value));
 
   return { ok: true, value: { items: matching.slice(0, limit ?? DEFAULT_LIMIT), total: matching.length, skippedInvalid } };
 }
 
 export async function addAccomplishment(env: Env, input: AddInput): Promise<Result<AddValue>> {
-  const result = validateAccomplishment({
-    $type: NSID,
-    title: input.title,
-    description: input.description,
-    startDate: input.startDate,
-    ...(input.endDate !== undefined && { endDate: input.endDate }),
-    ...(input.tags !== undefined && { tags: input.tags }),
-    ...(input.links !== undefined && { links: input.links }),
-    createdAt: new Date().toISOString(),
-  });
+  const result = validateAccomplishment(
+    {
+      $type: NSID,
+      title: input.title,
+      description: input.description,
+      funTitle: input.funTitle,
+      shortDescription: input.shortDescription,
+      icon: input.icon,
+      ...(input.done !== undefined && { done: input.done }),
+      ...(input.startDate !== undefined && { startDate: input.startDate }),
+      ...(input.endDate !== undefined && { endDate: input.endDate }),
+      ...(input.tags !== undefined && { tags: input.tags }),
+      ...(input.links !== undefined && { links: input.links }),
+      createdAt: new Date().toISOString(),
+    },
+    { mode: "write" },
+  );
   if (!result.ok) return { ok: false, kind: "invalid", errors: result.errors };
 
   const created = await withPds(env, ({ agent, identity }) =>

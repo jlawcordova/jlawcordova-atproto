@@ -18,7 +18,7 @@ const MAX_BODY_BYTES = 64 * 1024;
 const CHECK_TIMEOUT_MS = 5000;
 const TOKEN_FORMAT = /^gho_[A-Za-z0-9_]{20,255}$/;
 const COLLECTION = "/api/accomplishments";
-const ADD_FIELDS = new Set(["title", "description", "startDate", "endDate", "tags", "links"]);
+const ADD_FIELDS = new Set(["title", "description", "funTitle", "shortDescription", "icon", "done", "startDate", "endDate", "tags", "links"]);
 // Set by the Worker, so a caller sending them is ignored rather than refused.
 const IGNORED_FIELDS = new Set(["createdAt", "$type"]);
 

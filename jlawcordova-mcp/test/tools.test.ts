@@ -7,6 +7,9 @@ const { net } = useFakeNetwork();
 const valid = {
   title: "Cut deploy time by 40%",
   description: "Rebuilt the CI pipeline, cutting deploys from 10 to 6 minutes.",
+  funTitle: "Speed Demon",
+  shortDescription: "Deploys now finish in six minutes",
+  icon: "rocket",
   startDate: "2026-01",
   endDate: "2026-03",
   tags: ["CI"],
@@ -100,6 +103,29 @@ describe("add_accomplishment", () => {
   });
 });
 
+describe("add_accomplishment gamified fields", () => {
+  it("U11: saves funTitle, shortDescription, icon and done, and returns them", async () => {
+    const { startDate: _, endDate: __, ...goal } = valid;
+    const result = await callTool("add_accomplishment", { ...goal, done: false });
+    expect(result.isError).toBe(false);
+    const body = JSON.parse(net.callsTo("createRecord")[0]!.body);
+    expect(body.record).toMatchObject({ funTitle: "Speed Demon", shortDescription: "Deploys now finish in six minutes", icon: "rocket", done: false });
+    expect(body.record).not.toHaveProperty("startDate");
+    expect(result.json().record).toMatchObject({ icon: "rocket", done: false });
+  });
+
+  it("U11: the three new fields are required, with their word counts", async () => {
+    const { funTitle: _, ...noTitle } = valid;
+    expect((await callTool("add_accomplishment", noTitle)).isError).toBe(true); // refused by the input schema
+
+    const long = await callTool("add_accomplishment", { ...valid, funTitle: "One two three four", shortDescription: "Too short", icon: "" });
+    expect(long.text).toContain("- funTitle: must be one to three words");
+    expect(long.text).toContain("- shortDescription: must be five to seven words");
+    expect(long.text).toContain("- icon: is required");
+    expect(net.callsTo("createRecord")).toHaveLength(0);
+  });
+});
+
 describe("delete_accomplishment", () => {
   it("M8: a malformed rkey is rejected without touching the network", async () => {
     for (const rkey of ["nope", "../etc", tid(1).toUpperCase(), `${tid(1)}x`]) {
@@ -159,6 +185,17 @@ describe("list_accomplishments", () => {
     const limited = (await callTool("list_accomplishments", { limit: 2 })).json();
     expect(limited.items).toHaveLength(2);
     expect(limited.total).toBe(5);
+  });
+
+  it("V10: since keeps every locked record, which has no dates", async () => {
+    net.addRecord(stored({ title: "Old", startDate: "2020-01" }));
+    net.addRecord(stored({ title: "Goal", startDate: undefined, done: false }));
+    net.addRecord(stored({ title: "Recent", startDate: "2026-05" }));
+    const since = (await callTool("list_accomplishments", { since: "2026-01" })).json();
+    expect(since.items.map((i: { value: { title: string } }) => i.value.title)).toEqual(["Goal", "Recent"]);
+    expect(since.total).toBe(2);
+    const limited = (await callTool("list_accomplishments", { limit: 1 })).json();
+    expect(limited.items[0].value.title).toBe("Goal");
   });
 
   it("reads without authenticating to the PDS", async () => {

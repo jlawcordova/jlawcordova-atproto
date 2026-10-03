@@ -15,6 +15,9 @@ const STRANGER_TOKEN = "gho_fakeUnknownToken0123456789abc";
 const valid = {
   title: "Cut deploy time by 40%",
   description: "Rebuilt the CI pipeline, cutting deploys from 10 to 6 minutes.",
+  funTitle: "Speed Demon",
+  shortDescription: "Deploys now finish in six minutes",
+  icon: "rocket",
   startDate: "2026-01",
   endDate: "2026-03",
   tags: ["CI"],
@@ -182,6 +185,19 @@ describe("POST /api/accomplishments", () => {
     expect(fields).toEqual(expect.arrayContaining(["title", "startDate", "links[0]"]));
     expect(net.callsTo("createRecord")).toHaveLength(0);
     expect(net.callsTo("/dispatches")).toHaveLength(0);
+  });
+
+  it("U11: the new fields are accepted and required on POST", async () => {
+    const { startDate: _, endDate: __, ...goal } = valid;
+    const created = await post({ ...goal, done: false });
+    expect(created.status).toBe(201);
+    expect(created.json.record).toMatchObject({ funTitle: "Speed Demon", icon: "rocket", done: false });
+
+    const { icon: ___, ...noIcon } = valid;
+    const refused = await post(noIcon);
+    expect(refused.status).toBe(422);
+    expect(refused.json.errors).toEqual([{ field: "icon", message: "is required" }]);
+    expect(net.callsTo("createRecord")).toHaveLength(1);
   });
 
   it("A11: a missing required field is reported", async () => {
