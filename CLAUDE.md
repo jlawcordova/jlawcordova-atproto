@@ -31,7 +31,13 @@ flowchart LR
 3. **Plan** — a build order in `spec.md`: small, verifiable steps, each naming
    the acceptance tests it must pass.
 4. **Implement & verify** — build one step at a time against the spec, with
-   its tests. Ask before writing to real data or deploying.
+   its tests. Ask before writing to real data or deploying. As soon as a
+   build step's acceptance tests pass, record them without asking: update the
+   progress line under step 4 of the intent's AI-native SDLC list, and the
+   Verification section of the step's open PR (what ran, the result, and any
+   rkeys or run IDs), then commit and push to that PR's branch. Record only
+   what was actually run and seen; a test that wasn't run stays listed as not
+   verified. With no open PR, include the record in the step's next PR.
 5. **Deploy & operate** — ship it and confirm the success criteria.
 6. **Close** — mark `intent.md` and `spec.md` **Closed** in their status
    lines, mark each SDLC step done, and set the status in the index.
