@@ -1,6 +1,7 @@
 # Intent: Accomplishments CLI for Claude Code
 
-> Status: **v1.1** — Owner: J. Law Cordova — Date: 2026-10-03
+> Status: **Closed** (v1.1) — Owner: J. Law Cordova — Date: 2026-10-03 —
+> Closed: 2026-10-03
 
 ## Why
 
@@ -145,6 +146,8 @@ None. Details are in [`spec.md`](spec.md).
 
 ## AI-native SDLC
 
+All steps are done and the intent is closed.
+
 1. **Intent** (this document) — done.
 2. **Spec** — API contracts (paths, JSON shapes, errors, status codes), the
    device-flow login, the CLI's arguments and exit codes, the skill changes,
@@ -152,12 +155,19 @@ None. Details are in [`spec.md`](spec.md).
 3. **Plan** — the build order in [`spec.md`](spec.md#8-build-order) — done.
 4. **Implement & verify** — one step at a time with tests, including an
    end-to-end check against the real Worker and PDS (asking before writing real
-   data or deploying) — in progress: build steps 2 to 5 are merged (#10 to #13),
-   step 6 is verified against the deployed Worker (A1, A4, S7), and step 7's
-   real write, read-back, and delete passed (A10, A14, S6). Step 8's skill,
-   docs, and permission rule are done, with S1 to S5 passing. Build step 9,
-   releases, was added in v1.1: the build, workflow, and docs are in place,
-   P1 to P3 and P7 pass locally, and P4 to P6 wait on the first release tag.
-5. **Deploy & operate** — redeploy the Worker, install the command, update the
-   skill, publish the first release, and confirm the success criteria.
-6. **Close** — mark this intent and the spec **Closed** and update the index.
+   data or deploying) — done. Build steps 2 to 5 merged in #10 to #13. Step 6
+   was verified against the deployed Worker (A1, A4, S7), and step 7's real
+   write, read-back, and delete passed (A10, A14, S6). Step 8's skill, docs,
+   and permission rule merged in #15, with S1 to S5 passing. Step 9, releases,
+   was added in v1.1 (#17) and merged in #18: P1 to P3 and P7 passed locally,
+   a mismatched `cli-v0.0.0` tag failed the version guard with no release
+   (P5), and `cli-v1.0.0` published both assets, which installed from
+   `releases/latest/download` and listed records (P6). P4: the zip unpacks to
+   the same files as the repo's skill; loading it from an unzipped
+   `~/.claude/skills` in Claude Code was left to the owner.
+5. **Deploy & operate** — Worker redeployed, the command installed, the skill
+   updated, and release 1.0.0 published — done. The success criteria are
+   met, except that the install-from-release criterion's skill half rests on
+   P4's file check, not a run in Claude Code.
+6. **Close** — this intent and the spec are **Closed** and the index is
+   updated — done.
