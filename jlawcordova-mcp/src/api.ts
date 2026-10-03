@@ -1,8 +1,10 @@
 import {
+  ADD_FIELDS,
   addAccomplishment,
   deleteAccomplishment,
   describeError,
   listAccomplishments,
+  updateAccomplishment,
   type Failure,
 } from "./accomplishments.js";
 import type { Env } from "./env.js";
@@ -18,11 +20,10 @@ const MAX_BODY_BYTES = 64 * 1024;
 const CHECK_TIMEOUT_MS = 5000;
 const TOKEN_FORMAT = /^gho_[A-Za-z0-9_]{20,255}$/;
 const COLLECTION = "/api/accomplishments";
-const ADD_FIELDS = new Set(["title", "description", "funTitle", "shortDescription", "icon", "done", "startDate", "endDate", "tags", "links"]);
 // Set by the Worker, so a caller sending them is ignored rather than refused.
 const IGNORED_FIELDS = new Set(["createdAt", "$type"]);
 
-type Route = "list" | "add" | "delete" | "unknown";
+type Route = "list" | "add" | "update" | "delete" | "unknown";
 
 function respond(status: number, body: unknown, extra: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body, null, 2), {
@@ -99,7 +100,8 @@ async function verify(request: Request, env: Env): Promise<Verdict> {
 
 function failure(f: Failure): Response {
   if (f.kind === "invalid") return error(422, "invalid", "The record failed validation.", { errors: f.errors });
-  return error(f.kind === "not_found" ? 404 : 400, f.kind, f.message);
+  const status = f.kind === "not_found" ? 404 : f.kind === "conflict" ? 409 : 400;
+  return error(status, f.kind, f.message);
 }
 
 async function readJsonObject(request: Request): Promise<{ ok: true; value: Record<string, unknown> } | { ok: false; response: Response }> {
@@ -172,24 +174,35 @@ async function dispatch(request: Request, env: Env): Promise<Handled> {
     if (segment === "" || segment.includes("/")) {
       return { route: "unknown", outcome: "not_found", response: error(404, "not_found", "No such route.") };
     }
-    if (method !== "DELETE") {
+    if (method !== "DELETE" && method !== "PATCH") {
       return {
         route: "unknown",
         outcome: "method_not_allowed",
-        response: error(405, "method_not_allowed", "Use DELETE.", {}, { allow: "DELETE" }),
+        response: error(405, "method_not_allowed", "Use DELETE or PATCH.", {}, { allow: "DELETE, PATCH" }),
       };
     }
+    const route = method === "PATCH" ? "update" : "delete";
 
     let rkey: string;
     try {
       rkey = decodeURIComponent(segment);
     } catch {
       return {
-        route: "delete",
+        route,
         outcome: "bad_request",
         response: failure({ ok: false, kind: "bad_request", message: "rkey must be a valid record key (a 13-character TID)." }),
       };
     }
+
+    if (method === "PATCH") {
+      const body = await readJsonObject(request);
+      if (!body.ok) return { route, outcome: "rejected", rkey, response: body.response };
+
+      const result = await updateAccomplishment(env, rkey, body.value);
+      if (!result.ok) return { route, outcome: result.kind, rkey, response: failure(result) };
+      return { route, outcome: "ok", rkey, response: respond(200, result.value) };
+    }
+
     const result = await deleteAccomplishment(env, rkey);
     if (!result.ok) return { route: "delete", outcome: result.kind, rkey, response: failure(result) };
     return { route: "delete", outcome: "ok", rkey, response: respond(200, result.value) };

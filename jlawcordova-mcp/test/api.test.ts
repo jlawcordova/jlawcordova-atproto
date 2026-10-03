@@ -57,10 +57,18 @@ async function api(path: string, init: RequestInit = {}, token: string | null = 
 const post = (body: unknown, token: string | null = OWNER_TOKEN) =>
   api("/api/accomplishments", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }, token);
 
+const patch = (rkey: string, body: unknown, token: string | null = OWNER_TOKEN) =>
+  api(
+    `/api/accomplishments/${rkey}`,
+    { method: "PATCH", headers: { "content-type": "application/json" }, body: typeof body === "string" ? body : JSON.stringify(body) },
+    token,
+  );
+
 const ROUTES: [string, RequestInit][] = [
   ["/api/accomplishments", { method: "GET" }],
   ["/api/accomplishments", { method: "POST", body: JSON.stringify(valid) }],
   [`/api/accomplishments/${tid(1)}`, { method: "DELETE" }],
+  [`/api/accomplishments/${tid(1)}`, { method: "PATCH", body: JSON.stringify({ icon: "bug" }) }],
 ];
 
 const tokenChecks = () => net.callsTo("/applications/");
@@ -98,6 +106,7 @@ describe("API authentication", () => {
       ["/api/accomplishments", { method: "GET" }],
       ["/api/accomplishments", { method: "POST", body: JSON.stringify(valid) }],
       [`/api/accomplishments/${rkey}`, { method: "DELETE" }],
+      [`/api/accomplishments/${rkey}`, { method: "PATCH", body: JSON.stringify({ icon: "bug" }) }],
     ] as [string, RequestInit][]) {
       const { status, json } = await api(path, init, OTHER_TOKEN);
       expect(status).toBe(403);
@@ -254,6 +263,156 @@ describe("DELETE /api/accomplishments/{rkey}", () => {
   });
 });
 
+const gamified = {
+  funTitle: "Speed Demon",
+  shortDescription: "Deploys now finish in six minutes",
+  icon: "rocket",
+};
+
+describe("PATCH /api/accomplishments/{rkey}", () => {
+  const seed = (over: Record<string, unknown> = {}) =>
+    net.addRecord(stored({ ...gamified, endDate: "2026-03", tags: ["CI"], links: ["https://example.com/a"], ...over }));
+  const valueOf = (rkey: string) => net.records.get(rkey)!.value as Record<string, unknown>;
+
+  it("U1: a one-field patch changes that field and leaves everything else equal", async () => {
+    const rkey = seed();
+    const before = structuredClone(valueOf(rkey));
+    const { status, json } = await patch(rkey, { icon: "trophy" });
+    expect(status).toBe(200);
+    expect(valueOf(rkey)).toEqual({ ...before, icon: "trophy" });
+    expect(Object.keys(valueOf(rkey)).sort()).toEqual(Object.keys(before).sort());
+    expect(valueOf(rkey).createdAt).toBe(before.createdAt);
+    expect([...net.records.keys()]).toEqual([rkey]);
+    expect(json).toMatchObject({ rkey, uri: net.records.get(rkey)!.uri, cid: net.records.get(rkey)!.cid, record: valueOf(rkey), rebuild: "triggered" });
+  });
+
+  it("U2: null removes a field; $type and createdAt in the patch are ignored", async () => {
+    const rkey = seed();
+    const before = structuredClone(valueOf(rkey));
+    const { status } = await patch(rkey, { endDate: null, links: null, createdAt: "1999-01-01T00:00:00Z", $type: "something.else" });
+    expect(status).toBe(200);
+    const { endDate: _, links: __, ...rest } = before;
+    expect(valueOf(rkey)).toEqual(rest);
+    expect(valueOf(rkey).createdAt).toBe(before.createdAt);
+    expect(valueOf(rkey).$type).toBe(NSID);
+  });
+
+  it("U2: a field the API doesn't know is refused and nothing is written", async () => {
+    const rkey = seed();
+    const { status, json } = await patch(rkey, { organization: "Acme" });
+    expect(status).toBe(422);
+    expect(json.errors).toEqual([{ field: "organization", message: "is not a known field" }]);
+    expect(net.callsTo("putRecord")).toHaveLength(0);
+  });
+
+  it("U3: putRecord carries the stored CID as swapRecord; a swap failure → 409 and nothing else is written", async () => {
+    const rkey = seed();
+    const cid = net.records.get(rkey)!.cid;
+    expect((await patch(rkey, { icon: "bug" })).status).toBe(200);
+    const [put] = net.callsTo("putRecord");
+    expect(JSON.parse(put!.body)).toMatchObject({ rkey, collection: NSID, swapRecord: cid, validate: false });
+
+    // Someone else changes the record between the Worker's read and its write.
+    net.beforePut = (key) => net.putRecord(key, { ...valueOf(key), title: "Changed elsewhere" });
+    const dispatches = net.callsTo("/dispatches").length;
+    const { status, json } = await patch(rkey, { icon: "key" });
+    expect(status).toBe(409);
+    expect(json).toMatchObject({ error: "conflict", message: "The record changed while updating. Try again." });
+    expect(valueOf(rkey)).toMatchObject({ title: "Changed elsewhere", icon: "bug" });
+    expect(net.callsTo("/dispatches")).toHaveLength(dispatches);
+  });
+
+  it("U4: a merged record that fails write mode → 422 with every error, nothing written", async () => {
+    const rkey = seed();
+    const before = structuredClone(valueOf(rkey));
+    const { status, json } = await patch(rkey, { funTitle: "One two three four", shortDescription: "Too short", startDate: "2026-13" });
+    expect(status).toBe(422);
+    expect(json.errors.map((e: { field: string }) => e.field).sort()).toEqual(["funTitle", "shortDescription", "startDate"]);
+    expect(net.callsTo("putRecord")).toHaveLength(0);
+    expect(net.callsTo("/dispatches")).toHaveLength(0);
+    expect(valueOf(rkey)).toEqual(before);
+  });
+
+  it("U5: unknown rkey → 404; malformed rkey, empty patch or non-JSON body → 400; over 64 KiB → 413", async () => {
+    const rkey = seed();
+    const missing = await patch(tid(30), { icon: "bug" });
+    expect(missing.status).toBe(404);
+    expect(missing.json.error).toBe("not_found");
+
+    for (const bad of ["nope", "%E0%A4%A", "3jzfcijpj2z2!"]) {
+      expect((await patch(bad, { icon: "bug" })).status, bad).toBe(400);
+    }
+    const empty = await patch(rkey, {});
+    expect(empty.status).toBe(400);
+    expect(empty.json.message).toBe("Nothing to update.");
+    for (const body of ["not json", "[1,2]", "null", '"text"', ""]) {
+      const { status, json } = await patch(rkey, body);
+      expect(status, body).toBe(400);
+      expect(json.error).toBe("bad_request");
+    }
+    const big = await patch(rkey, { description: "x".repeat(70_000) });
+    expect(big.status).toBe(413);
+    expect(big.json.error).toBe("too_large");
+    expect(net.callsTo("putRecord")).toHaveLength(0);
+  });
+
+  it("U6: marking done and re-locking both succeed", async () => {
+    const rkey = net.addRecord(stored({ ...gamified, startDate: undefined, done: false }));
+    const done = await patch(rkey, { done: true, startDate: "2026-10" });
+    expect(done.status).toBe(200);
+    expect(valueOf(rkey)).toMatchObject({ done: true, startDate: "2026-10" });
+
+    const relock = await patch(rkey, { done: false, startDate: null, endDate: null });
+    expect(relock.status).toBe(200);
+    expect(valueOf(rkey)).toMatchObject({ done: false });
+    expect(valueOf(rkey)).not.toHaveProperty("startDate");
+    expect(valueOf(rkey)).not.toHaveProperty("endDate");
+  });
+
+  it("U6: marking done without a month is refused", async () => {
+    const rkey = net.addRecord(stored({ ...gamified, startDate: undefined, done: false }));
+    const { status, json } = await patch(rkey, { done: true });
+    expect(status).toBe(422);
+    expect(json.errors).toEqual([{ field: "startDate", message: "is required unless done is false" }]);
+  });
+
+  it("U7: adding the three fields to an old-style record succeeds", async () => {
+    const old = stored({ endDate: "2026-03", tags: ["CI"] });
+    const rkey = net.addRecord(old);
+    const { status } = await patch(rkey, gamified);
+    expect(status).toBe(200);
+    expect(valueOf(rkey)).toEqual({ ...old, ...gamified });
+    expect(valueOf(rkey)).not.toHaveProperty("done");
+    // A patch with only some of the three fields isn't enough for an old record.
+    const other = net.addRecord(stored());
+    expect((await patch(other, { icon: "bug" })).status).toBe(422);
+  });
+
+  it("U8: a successful update triggers one rebuild; a failed trigger doesn't fail it", async () => {
+    const rkey = seed();
+    const ok = await patch(rkey, { icon: "bug" });
+    expect(ok.json.rebuild).toBe("triggered");
+    expect(net.callsTo("/dispatches")).toHaveLength(1);
+    expect(JSON.parse(net.callsTo("/dispatches")[0]!.body)).toEqual({ event_type: "atproto-updated" });
+
+    net.dispatchStatus = 500;
+    const failed = await patch(rkey, { icon: "key" });
+    expect(failed.status).toBe(200);
+    expect(failed.json.rebuild).toMatch(/^failed:/);
+    expect(valueOf(rkey).icon).toBe("key");
+  });
+
+  it("U9: no token → 401, another user → 403, and nothing is written", async () => {
+    const rkey = seed();
+    expect((await patch(rkey, { icon: "bug" }, null)).status).toBe(401);
+    expect((await patch(rkey, { icon: "bug" }, OTHER_TOKEN)).status).toBe(403);
+    expect((await patch(rkey, { icon: "bug" }, STRANGER_TOKEN)).status).toBe(401);
+    expect(net.callsTo("putRecord")).toHaveLength(0);
+    expect(pdsTouched()).toHaveLength(0);
+    expect(valueOf(rkey).icon).toBe("rocket");
+  });
+});
+
 describe("errors and routing", () => {
   it("A16: a failed rebuild doesn't fail POST or DELETE", async () => {
     net.dispatchStatus = 500;
@@ -285,7 +444,7 @@ describe("errors and routing", () => {
 
     const get = await api(`/api/accomplishments/${tid(1)}`);
     expect(get.status).toBe(405);
-    expect(get.res.headers.get("allow")).toBe("DELETE");
+    expect(get.res.headers.get("allow")).toBe("DELETE, PATCH"); // U10
     expect(net.records.size).toBe(0);
   });
 
