@@ -139,6 +139,57 @@ describe("add", () => {
   });
 });
 
+describe("update", () => {
+  it("C1: sends stdin unchanged as the PATCH body to the URL-encoded rkey and prints the 200 body", async () => {
+    reply = { status: 200, body: { rkey: "a/b?c", updated: ["done"], rebuild: "triggered" } };
+    const stdin = `{ "done":true,\n  "startDate": "2026-01" }\n`;
+    const out = await cli(["update", "a/b?c"], { stdin });
+    expect(out.code).toBe(0);
+    expect(JSON.parse(out.stdout)).toEqual(reply.body);
+    expect(out.stderr).toBe("");
+    expect(seen).toHaveLength(1);
+    expect(seen[0]!.method).toBe("PATCH");
+    expect(seen[0]!.url).toBe("/api/accomplishments/a%2Fb%3Fc");
+    expect(seen[0]!.body).toBe(stdin);
+    expect(seen[0]!.headers["content-type"]).toBe("application/json");
+    expect(seen[0]!.headers.authorization).toBe(`Bearer ${TOKEN}`);
+  });
+
+  it("C2: update with no rkey exits 2 and sends nothing", async () => {
+    const out = await cli(["update"], { stdin: '{"done":true}' });
+    expect(out.code).toBe(2);
+    expect(JSON.parse(out.stderr.slice(0, out.stderr.indexOf("}\n") + 1)).error).toBe("usage");
+    expect(out.stdout).toBe("");
+    expect((await cli(["update", "a", "b"], { stdin: '{"done":true}' })).code).toBe(2);
+    expect(seen).toHaveLength(0);
+  });
+
+  it("C2: update with empty stdin or a non-object exits 2 and sends nothing", async () => {
+    for (const stdin of ["", "   \n", "not json", "[1]", "null", '"text"', "42"]) {
+      const out = await cli(["update", "3jzfcijpj2z2a"], { stdin });
+      expect(out.code, JSON.stringify(stdin)).toBe(2);
+      expect(JSON.parse(out.stderr.slice(0, out.stderr.indexOf("}\n") + 1)).error).toBe("usage");
+      expect(out.stdout).toBe("");
+    }
+    expect(seen).toHaveLength(0);
+  });
+
+  it("C3: 404, 409 and 422 exit 1 with the error on stderr and nothing on stdout", async () => {
+    const errors = [{ field: "icon", message: "must be an emoji" }];
+    for (const [status, body] of [
+      [404, { error: "not_found", message: "Not found: no accomplishment with rkey x." }],
+      [409, { error: "conflict", message: "The record changed while updating. Try again." }],
+      [422, { error: "invalid", message: "The record failed validation.", errors }],
+    ] as const) {
+      reply = { status, body };
+      const out = await cli(["update", "x"], { stdin: '{"icon":"x"}' });
+      expect(out.code, String(status)).toBe(1);
+      expect(out.stdout).toBe("");
+      expect(JSON.parse(out.stderr)).toEqual(body);
+    }
+  });
+});
+
 describe("delete", () => {
   it("C5: URL-encodes the rkey, and a 404 exits 1", async () => {
     reply = { status: 404, body: { error: "not_found", message: "Not found: no accomplishment with rkey a/b?c." } };
@@ -229,8 +280,16 @@ describe("token lookup", () => {
 });
 
 describe("usage", () => {
+  it("C4: usage text lists update, and --help still exits 2", async () => {
+    const out = await cli(["--help"]);
+    expect(out.code).toBe(2);
+    expect(out.stderr).toContain("accomplishments update <rkey>");
+    expect(out.stdout).toBe("");
+    expect(seen).toHaveLength(0);
+  });
+
   it("C12: an unknown command, no command, or --help prints usage to stderr and exits 2", async () => {
-    for (const argv of [[], ["nope"], ["--help"], ["help"], ["update", "x"]]) {
+    for (const argv of [[], ["nope"], ["--help"], ["help"]]) {
       const out = await cli(argv);
       expect(out.code, argv.join(" ")).toBe(2);
       expect(out.stderr).toContain("Usage:");
@@ -245,6 +304,7 @@ describe("secrets", () => {
     const outputs: Outcome[] = [];
     outputs.push(await cli(["list"]));
     outputs.push(await cli(["add"], { stdin: JSON.stringify(record) }));
+    outputs.push(await cli(["update", "3jzfcijpj2z2a"], { stdin: '{"done":true}' }));
     outputs.push(await cli(["delete", "3jzfcijpj2z2a"]));
     outputs.push(await cli(["add"], { stdin: "nope" }));
     outputs.push(await cli(["nope"]));

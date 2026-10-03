@@ -24,7 +24,7 @@ export function fail(deps: Deps, code: number, error: string, message: string, e
 }
 
 export interface Request {
-  method: "GET" | "POST" | "DELETE";
+  method: "GET" | "POST" | "PATCH" | "DELETE";
   path: string;
   body?: string;
 }
