@@ -36,7 +36,7 @@ failure. Exit codes: 0 success, 1 the API refused or failed, 2 bad usage,
     then run `accomplishments login`, and stop.
   - Exit 4: the Worker can't be reached. Say so and stop.
 - Run `accomplishments --help`. It exits 2, which is expected here; read the
-  usage text. If it doesn't list `update`, the CLI is older than 1.1.0: say to
+  usage text, which it prints on stderr. If it doesn't list `update`, the CLI is older than 1.1.0: say to
   install CLI 1.1.0 from the latest release (the `npm install -g` command
   above) and stop.
 - Run `gh auth status` to find the active GitHub account. Name that account in
