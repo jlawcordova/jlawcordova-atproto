@@ -149,6 +149,10 @@ None. Details are in [`spec.md`](spec.md).
    run: each draft in the selector showed a fun title, a short description
    with its word count and an icon from the fetched list, then the plain
    title; of two drafts only the chosen one was saved (`3mwz2zhj3zi2w`).
-   Not verified yet: S3 to S6 (real skill runs).
+   S3 passed on 2026-10-04: "add a goal: …" drafted a record with
+   `done: false`, no dates, a future-tense description and the three new
+   fields, showed every field, and saved it (`3mwz363debb2r`) only after
+   approval; `list` returns it first. Not verified yet: S4 (needs a goal
+   more than 14 days old), S5 (after the site's PR 3) and S6.
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
