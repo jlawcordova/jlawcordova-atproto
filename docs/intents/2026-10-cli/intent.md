@@ -1,6 +1,6 @@
 # Intent: Accomplishments CLI for Claude Code
 
-> Status: **v1.0** — Owner: J. Law Cordova — Date: 2026-10-02
+> Status: **v1.1** — Owner: J. Law Cordova — Date: 2026-10-03
 
 ## Why
 
@@ -54,6 +54,9 @@ flowchart LR
    and saves them with `add`.
 6. After an `add` or `delete` the portfolio is rebuilt by the Worker, as it is
    today, and the output says whether it was.
+7. The CLI and the skill are **released on GitHub**. Pushing a `cli-v<version>`
+   tag publishes one GitHub Release with the CLI package and the skill as a
+   zip, so I can install both without cloning this repo.
 
 ## Scope
 
@@ -72,7 +75,8 @@ flowchart LR
 - The Accomplishments Inbox artifact. The skill stops using it. It can stay
   published; deleting it is a separate call.
 - An `update` command (delete and recreate, as in v1).
-- Publishing the CLI to npm. It runs from this repo.
+- Publishing to the npm registry or GitHub Packages. Releases are GitHub
+  Release assets.
 - Any new field on the record, or any change to the Lexicon.
 - Other platforms. I use macOS.
 
@@ -107,6 +111,9 @@ flowchart LR
 - Calls with no token, a bad token, or a token for any other GitHub user
   (such as `netzon-jlaw`) create, list, and delete nothing.
 - The Worker redeploys with no record loss, and the MCP endpoint still works.
+- On a Mac without this repo, the CLI installs from the latest release with one
+  `npm install -g`, and the skill from the release's zip, and "draft my
+  accomplishments" works.
 
 ## Decisions
 
@@ -128,6 +135,9 @@ flowchart LR
 | Token lifetime | OAuth App tokens don't expire. Accepted: the token has no scopes and the Worker checks the user ID on every call. The setup guide says how to revoke it |
 | Token verification | Not `GET /user`: the Worker checks the token against this app (`/applications/{client_id}/token`), so a token from another site where I used "Sign in with GitHub" can't be used |
 | Skill name | Renamed to `accomplishments`; the inbox page is deleted |
+| Distribution | GitHub Release assets: the CLI as an npm tarball (`npm install -g <URL>`, no registry or token) and the skill as a zip. Not GitHub Packages, which needs a scoped name and a token even to install |
+| Build | The package runs compiled JavaScript, because Node won't strip types from files inside `node_modules`. `npm link` from the repo still works |
+| Releases | A tag push (`cli-v<version>`) runs a GitHub Actions workflow that tests, builds, and publishes. The CLI and skill share one version, because the skill depends on the CLI's commands |
 
 ## Open questions
 
@@ -145,7 +155,8 @@ None. Details are in [`spec.md`](spec.md).
    data or deploying) — in progress: build steps 2 to 5 are merged (#10 to #13),
    step 6 is verified against the deployed Worker (A1, A4, S7), and step 7's
    real write, read-back, and delete passed (A10, A14, S6). Step 8's skill,
-   docs, and permission rule are done, with S1 to S5 passing.
+   docs, and permission rule are done, with S1 to S5 passing. Build step 9,
+   releases, was added in v1.1.
 5. **Deploy & operate** — redeploy the Worker, install the command, update the
-   skill, and confirm the success criteria.
+   skill, publish the first release, and confirm the success criteria.
 6. **Close** — mark this intent and the spec **Closed** and update the index.
