@@ -163,11 +163,9 @@ All steps are done and the intent is closed.
    a mismatched `cli-v0.0.0` tag failed the version guard with no release
    (P5), and `cli-v1.0.0` published both assets, which installed from
    `releases/latest/download` and listed records (P6). P4: the zip unpacks to
-   the same files as the repo's skill; loading it from an unzipped
-   `~/.claude/skills` in Claude Code was left to the owner.
+   the same files as the repo's skill, and the owner confirmed the skill
+   loads from the release zip in a separate Claude app.
 5. **Deploy & operate** — Worker redeployed, the command installed, the skill
-   updated, and release 1.0.0 published — done. The success criteria are
-   met, except that the install-from-release criterion's skill half rests on
-   P4's file check, not a run in Claude Code.
+   updated, and release 1.0.0 published; the success criteria are met — done.
 6. **Close** — this intent and the spec are **Closed** and the index is
    updated — done.
