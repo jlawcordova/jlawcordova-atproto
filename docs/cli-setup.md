@@ -118,7 +118,9 @@ The CLI and the skill are released together, with the version in
 2. Tag the merge on `main` and push the tag:
 
    ```sh
-   git fetch origin && git tag cli-v<version> origin/main && git push origin cli-v<version>
+   git fetch origin
+   git tag -a cli-v<version> -m "accomplishments <version>" origin/main
+   git push origin cli-v<version>
    ```
 
 The **Release the accomplishments CLI and skill** workflow checks that the tag
