@@ -152,7 +152,10 @@ None. Details are in [`spec.md`](spec.md).
    S3 passed on 2026-10-04: "add a goal: …" drafted a record with
    `done: false`, no dates, a future-tense description and the three new
    fields, showed every field, and saved it (`3mwz363debb2r`) only after
-   approval; `list` returns it first. Not verified yet: S4 (needs a goal
-   more than 14 days old), S5 (after the site's PR 3) and S6.
+   approval; `list` returns it first. S6 passed on 2026-10-04: a headless
+   run with CLI 1.0.0 from the release first on PATH stopped at preflight,
+   saying the CLI is older than 1.1.0 (usage lacks `update`) and to install
+   the latest release, with nothing gathered or drafted. Not verified yet:
+   S4 (needs a goal more than 14 days old) and S5 (after the site's PR 3).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
