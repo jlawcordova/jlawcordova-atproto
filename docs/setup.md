@@ -102,7 +102,7 @@ New OAuth App**.
 | Application name | `jlawcordova-mcp` | `jlawcordova-mcp (dev)` |
 | Homepage URL | `https://jlawcordova.com` | `https://jlawcordova.com` |
 | Authorization callback URL | `https://jlawcordova-mcp.<account-subdomain>.workers.dev/callback` | `http://localhost:8788/callback` |
-| Enable Device Flow | off | off |
+| Enable Device Flow | on, for the `accomplishments` CLI ([`cli-setup.md`](cli-setup.md)) | off |
 
 For each app, click **Generate a new client secret** and save the secret as
 `GITHUB_CLIENT_SECRET`. The **Client ID** isn't secret, because it appears in
