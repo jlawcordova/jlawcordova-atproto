@@ -6,6 +6,7 @@ import {
   deleteAccomplishment,
   describeError,
   listAccomplishments,
+  updateAccomplishment,
   type AddInput,
   type Failure,
 } from "./accomplishments.js";
@@ -87,8 +88,15 @@ export function createServer(env: Env): McpServer {
       inputSchema: z.object({
         title: z.string().describe("Short headline, up to 200 characters."),
         description: z.string().describe("What was done and its impact, impact first. Up to 1000 characters."),
-        startDate: z.string().describe("Month it started or happened, as YYYY-MM."),
-        endDate: z.string().optional().describe("Month it finished, as YYYY-MM. Omit if ongoing or a single month."),
+        funTitle: z.string().describe("Playful name for the achievement list, one to three words."),
+        shortDescription: z.string().describe("A line under the fun title, five to seven words."),
+        icon: z.string().describe("Icon ID in lowercase kebab-case, such as sprout, rocket or trophy."),
+        done: z.boolean().optional().describe("False saves a locked goal that has no dates. Defaults to true."),
+        startDate: z
+          .string()
+          .optional()
+          .describe("Month it started or happened, as YYYY-MM. Required unless done is false, when it must be omitted."),
+        endDate: z.string().optional().describe("Month it finished, as YYYY-MM. Omit if ongoing, a single month or locked."),
         tags: z.array(z.string()).optional().describe("Up to 10 skills, technologies, or themes."),
         links: z.array(z.string()).optional().describe("Up to 10 http(s) links as evidence."),
       }),
@@ -100,6 +108,31 @@ export function createServer(env: Env): McpServer {
         return fail(failureText(result));
       }
       log({ event: "tool", tool: "add_accomplishment", outcome: "ok", rkey: result.value.rkey });
+      return ok(result.value);
+    }),
+  );
+
+  server.registerTool(
+    "update_accomplishment",
+    {
+      description:
+        "Changes one accomplishment in J. Law Cordova's AT Protocol repo in place, by its record key (rkey), as returned by list_accomplishments. The record is **PUBLIC**. Only call this after the user has explicitly approved the exact text of every field in the patch in this conversation. Fields not in the patch stay as they are, and createdAt never changes.",
+      inputSchema: z.object({
+        rkey: z.string().describe("Record key (a 13-character TID)."),
+        patch: z
+          .record(z.string(), z.unknown())
+          .describe(
+            "Fields to change, from: title, description, funTitle, shortDescription, icon, done, startDate, endDate, tags, links. Set a field to null to remove it. To mark a locked accomplishment done, send done: true and a startDate. To lock one again, send done: false, startDate: null and endDate: null.",
+          ),
+      }),
+    },
+    guarded(env, "update_accomplishment", async ({ rkey, patch }: { rkey: string; patch: Record<string, unknown> }) => {
+      const result = await updateAccomplishment(env, rkey, patch);
+      if (!result.ok) {
+        log({ event: "tool", tool: "update_accomplishment", outcome: result.kind, rkey });
+        return fail(failureText(result));
+      }
+      log({ event: "tool", tool: "update_accomplishment", outcome: "ok", rkey });
       return ok(result.value);
     }),
   );

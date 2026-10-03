@@ -36,6 +36,9 @@ export class FakeNetwork {
   sessionDid = DID;
   pageSize = 100;
   listStatus: number | undefined;
+  /** Runs at the start of every putRecord, so a test can change a record between the Worker's read and write. */
+  beforePut: ((rkey: string) => void) | undefined;
+  private cidCounter = 0;
   private recordCounter = 0;
 
   // GitHub
@@ -66,6 +69,13 @@ export class FakeNetwork {
     const uri = `at://${DID}/${NSID}/${rkey}`;
     this.records.set(rkey, { uri, cid: "bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3hpm", value });
     return rkey;
+  }
+
+  /** Replaces a record's value and gives it a new CID (32 distinct ones), as the PDS does on every write. */
+  putRecord(rkey: string, value: unknown) {
+    const uri = `at://${DID}/${NSID}/${rkey}`;
+    this.records.set(rkey, { uri, cid: `bafyreie5737gdxlw5i64vzichcalba3z2v5n6icifvx5xytvske7mr3${B32[++this.cidCounter % 32]}pm`, value });
+    return this.records.get(rkey)!;
   }
 
   private newSession() {
@@ -138,6 +148,17 @@ export class FakeNetwork {
           const body = JSON.parse(call.body);
           const rkey = this.addRecord(body.record);
           const stored = this.records.get(rkey)!;
+          return this.json({ uri: stored.uri, cid: stored.cid });
+        }
+        case "com.atproto.repo.putRecord": {
+          if (!this.validAccess.has(this.bearer(call))) return this.expired();
+          const body = JSON.parse(call.body);
+          this.beforePut?.(body.rkey);
+          const current = this.records.get(body.rkey);
+          if (body.swapRecord !== undefined && body.swapRecord !== current?.cid) {
+            return this.json({ error: "InvalidSwap", message: "Record was at a different CID" }, 400);
+          }
+          const stored = this.putRecord(body.rkey, body.record);
           return this.json({ uri: stored.uri, cid: stored.cid });
         }
         case "com.atproto.repo.deleteRecord": {

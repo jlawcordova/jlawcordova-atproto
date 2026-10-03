@@ -7,6 +7,7 @@ export type { Deps } from "./api.ts";
 const USAGE = `Usage:
   accomplishments list [--since YYYY-MM] [--limit N]
   accomplishments add              (a JSON object on stdin)
+  accomplishments update <rkey>    (a JSON patch object on stdin)
   accomplishments delete <rkey>
   accomplishments login            (sign in with GitHub; once per machine)
 
@@ -16,7 +17,7 @@ Exit codes: 0 ok, 1 refused or failed, 2 bad usage, 3 not signed in, 4 network.
 
 class Usage extends Error {}
 
-/** Turns the arguments into a request, or throws Usage. `add` reads its body here, before anything is sent. */
+/** Turns the arguments into a request, or throws Usage. `add` and `update` read their body here, before anything is sent. */
 async function plan(argv: string[], deps: Deps): Promise<Request> {
   const [command, ...rest] = argv;
 
@@ -58,6 +59,20 @@ async function plan(argv: string[], deps: Deps): Promise<Request> {
         throw new Usage("add reads a JSON object from stdin.");
       }
       return { method: "POST", path: "/api/accomplishments", body };
+    }
+    case "update": {
+      if (positionals.length !== 1) throw new Usage("update takes exactly one argument: the rkey.");
+      const body = await deps.readStdin();
+      let parsedBody: unknown;
+      try {
+        parsedBody = JSON.parse(body);
+      } catch {
+        throw new Usage("update reads a JSON object from stdin, and that isn't valid JSON.");
+      }
+      if (typeof parsedBody !== "object" || parsedBody === null || Array.isArray(parsedBody)) {
+        throw new Usage("update reads a JSON object from stdin.");
+      }
+      return { method: "PATCH", path: `/api/accomplishments/${encodeURIComponent(positionals[0]!)}`, body };
     }
     case "delete": {
       if (positionals.length !== 1) throw new Usage("delete takes exactly one argument: the rkey.");

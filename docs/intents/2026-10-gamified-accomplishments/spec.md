@@ -188,8 +188,8 @@ As parent D7, with these details:
   and stops at the first failure with the rkey and the error. Rerunning it
   skips what's done.
 - **Test.** `scripts/migrate-gamified-accomplishments.test.mjs`, run with
-  `node --test scripts/`, drives the script with a fake `accomplishments` on
-  `PATH`. The root `npm test` runs workspaces only, so the PR's Verification
+  `node --test "scripts/*.test.mjs"` (Node 22 reads a bare `scripts/` as a
+  module path), drives the script with a fake `accomplishments` on `PATH`. The root `npm test` runs workspaces only, so the PR's Verification
   section shows this command separately.
 - Both files are deleted in a clean-up commit after the run.
 

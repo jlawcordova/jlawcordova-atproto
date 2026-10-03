@@ -132,6 +132,11 @@ export async function withPds<T>(env: Env, fn: (s: PdsSession) => Promise<T>): P
   }
 }
 
+/** True when `swapRecord` didn't match: the record changed since it was read. */
+export function isInvalidSwap(error: unknown): boolean {
+  return (error as { error?: string } | null)?.error === "InvalidSwap";
+}
+
 /** True for the PDS's "record doesn't exist" error. */
 export function isRecordNotFound(error: unknown): boolean {
   return (error as { error?: string } | null)?.error === "RecordNotFound";

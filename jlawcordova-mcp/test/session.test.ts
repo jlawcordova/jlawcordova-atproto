@@ -6,7 +6,14 @@ import { DID, useFakeNetwork } from "./fake-network.js";
 const { net } = useFakeNetwork();
 
 const SESSION_KEY = "atproto:session:v1";
-const accomplishment = { title: "Shipped it", description: "Did a thing.", startDate: "2026-01" };
+const accomplishment = {
+  title: "Shipped it",
+  description: "Did a thing.",
+  funTitle: "Shipper",
+  shortDescription: "Shipped the thing without any drama",
+  icon: "rocket",
+  startDate: "2026-01",
+};
 
 const store = (session: unknown) => env.OAUTH_KV.put(SESSION_KEY, JSON.stringify(session));
 const stored = () => env.OAUTH_KV.get<{ accessJwt: string; refreshJwt: string; did: string }>(SESSION_KEY, "json");

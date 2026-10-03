@@ -8,7 +8,7 @@
       "description": "A single career accomplishment. Records are public.",
       "record": {
         "type": "object",
-        "required": ["title", "description", "startDate", "createdAt"],
+        "required": ["title", "description", "createdAt"],
         "properties": {
           "title": {
             "type": "string",
@@ -22,11 +22,35 @@
             "maxGraphemes": 1000,
             "description": "What was done and its impact, impact first."
           },
+          "funTitle": {
+            "type": "string",
+            "maxLength": 600,
+            "maxGraphemes": 60,
+            "description": "Playful one-to-three-word name shown on the portfolio's achievement list."
+          },
+          "shortDescription": {
+            "type": "string",
+            "maxLength": 800,
+            "maxGraphemes": 80,
+            "description": "Five-to-seven-word line shown under the fun title."
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 320,
+            "maxGraphemes": 32,
+            "knownValues": ["sprout", "hammer", "rocket", "bug", "shield", "key", "wrench", "book", "magnifier", "flask", "apple", "heart", "signpost", "chest", "trophy", "speech"],
+            "description": "ID of the pixel-art icon. Advisory: the site shows a fallback for an unknown ID."
+          },
+          "done": {
+            "type": "boolean",
+            "default": true,
+            "description": "False marks a locked accomplishment (a goal not reached yet), which has no dates. Absent means done."
+          },
           "startDate": {
             "type": "string",
             "minLength": 7,
             "maxLength": 7,
-            "description": "Month it started or happened, as YYYY-MM."
+            "description": "Month it started or happened, as YYYY-MM. Required unless done is false."
           },
           "endDate": {
             "type": "string",

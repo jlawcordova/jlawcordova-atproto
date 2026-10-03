@@ -69,7 +69,7 @@ The repo's [`.claude/settings.json`](../.claude/settings.json) allows
 ```
 
 To get the same outside this repo, add the rule to `~/.claude/settings.json`.
-`add` and `delete` are left out on purpose, so Claude Code asks before every
+`add`, `update` and `delete` are left out on purpose, so Claude Code asks before every
 write.
 
 ## 5. Install the skill

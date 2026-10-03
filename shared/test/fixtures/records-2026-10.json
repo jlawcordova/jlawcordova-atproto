@@ -1,0 +1,151 @@
+[
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture alpha: trimmed the build graph for the sample app",
+    "description": "Invented text for the first fixture record, describing a made-up build improvement and its imagined effect on the sample app.",
+    "tags": [
+      "sample-a",
+      "sample-b",
+      "sample-c",
+      "sample-d"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T05:51:36.634Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture bravo: added retries to a pretend queue worker",
+    "description": "Invented text for the second fixture record about a pretend queue worker that now survives imaginary outages without paging anyone.",
+    "tags": [
+      "sample-a",
+      "sample-e",
+      "sample-f",
+      "sample-g",
+      "sample-h"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T05:51:34.567Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture charlie: ran a made-up migration across two pretend services",
+    "description": "Invented text for the third fixture record, which spans two months and covers a fictional migration across two imaginary services.",
+    "tags": [
+      "sample-b",
+      "sample-i",
+      "sample-j",
+      "sample-k",
+      "sample-l"
+    ],
+    "startDate": "2026-09",
+    "endDate": "2026-10",
+    "createdAt": "2026-10-03T05:51:32.647Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture delta: wrote a pretend runbook for sample incidents",
+    "description": "Invented text for the fourth fixture record about a runbook written for fictional incidents so the imaginary on-call could sleep.",
+    "tags": [
+      "sample-c",
+      "sample-m",
+      "sample-n",
+      "sample-o",
+      "sample-p",
+      "sample-q"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T05:51:29.289Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture echo: tuned a fictional cache for the sample dashboard",
+    "description": "Invented text for the fifth fixture record describing a cache tuned for a dashboard that does not exist, with invented speedups.",
+    "tags": [
+      "sample-d",
+      "sample-r",
+      "sample-s",
+      "sample-t"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T04:11:02.528Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture foxtrot: reviewed a sample pull request thread about a pretend API",
+    "description": "Invented text for the sixth fixture record about reviewing a made-up pull request, with two invented links to nowhere real.",
+    "links": [
+      "https://example.com/fixture/pull/1",
+      "https://example.com/fixture/pull/2"
+    ],
+    "tags": [
+      "sample-e",
+      "sample-u",
+      "sample-v",
+      "sample-w",
+      "sample-x"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T04:02:15.819Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture golf: documented a pretend protocol for the sample project",
+    "description": "Invented text for the seventh fixture record covering documentation of a fictional protocol, with one invented reference link.",
+    "links": [
+      "https://example.com/fixture/docs"
+    ],
+    "tags": [
+      "sample-f",
+      "sample-y",
+      "sample-z",
+      "sample-aa",
+      "sample-ab",
+      "sample-ac",
+      "sample-ad"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-03T04:02:13.655Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture hotel: shipped a made-up feature flag cleanup",
+    "description": "Invented text for the eighth fixture record about removing imaginary feature flags, with two invented links to example pages.",
+    "links": [
+      "https://example.com/fixture/flags",
+      "https://example.com/fixture/notes"
+    ],
+    "tags": [
+      "sample-g",
+      "sample-ae",
+      "sample-af",
+      "sample-ag",
+      "sample-ah",
+      "sample-ai",
+      "sample-aj"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-01T16:17:25.476Z"
+  },
+  {
+    "$type": "com.jlawcordova.profile.accomplishment",
+    "title": "Fixture india: paired on a pretend test harness for the sample suite",
+    "description": "Invented text for the ninth fixture record about a fictional test harness, the oldest record, with two invented links and the most tags.",
+    "links": [
+      "https://example.com/fixture/harness",
+      "https://example.com/fixture/suite"
+    ],
+    "tags": [
+      "sample-h",
+      "sample-ak",
+      "sample-al",
+      "sample-am",
+      "sample-an",
+      "sample-ao",
+      "sample-ap",
+      "sample-aq",
+      "sample-ar"
+    ],
+    "startDate": "2026-10",
+    "createdAt": "2026-10-01T15:17:22.015Z"
+  }
+]

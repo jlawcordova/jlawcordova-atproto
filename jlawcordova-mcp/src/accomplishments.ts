@@ -6,7 +6,7 @@ import {
   type ValidationError,
 } from "@jlawcordova/accomplishment";
 import type { Env } from "./env.js";
-import { isRecordNotFound, resolveIdentity, withPds } from "./pds.js";
+import { isInvalidSwap, isRecordNotFound, resolveIdentity, withPds } from "./pds.js";
 import { triggerRebuild, type RebuildResult } from "./rebuild.js";
 
 /**
@@ -20,18 +20,29 @@ const PAGE_SIZE = 100;
 const DEFAULT_LIMIT = 50;
 const TID = /^[234567abcdefghij][234567abcdefghijklmnopqrstuvwxyz]{12}$/;
 const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+/** The fields a caller may set on add or update. `createdAt` and `$type` are the Worker's. */
+export const ADD_FIELDS = new Set([
+  "title", "description", "funTitle", "shortDescription", "icon", "done", "startDate", "endDate", "tags", "links",
+]);
+// Set by the Worker, so a caller sending them is ignored rather than refused.
+const IGNORED_FIELDS = new Set(["createdAt", "$type"]);
 
 export type Failure =
   | { ok: false; kind: "bad_request"; message: string }
   | { ok: false; kind: "invalid"; errors: ValidationError[] }
-  | { ok: false; kind: "not_found"; message: string };
+  | { ok: false; kind: "not_found"; message: string }
+  | { ok: false; kind: "conflict"; message: string };
 
 export type Result<T> = { ok: true; value: T } | Failure;
 
 export interface AddInput {
   title: string;
   description: string;
-  startDate: string;
+  funTitle: string;
+  shortDescription: string;
+  icon: string;
+  done?: boolean;
+  startDate?: string;
   endDate?: string;
   tags?: string[];
   links?: string[];
@@ -51,6 +62,14 @@ export interface ListValue {
 }
 
 export interface AddValue {
+  rkey: string;
+  uri: string;
+  cid: string;
+  record: Accomplishment;
+  rebuild: RebuildResult;
+}
+
+export interface UpdateValue {
   rkey: string;
   uri: string;
   cid: string;
@@ -120,23 +139,31 @@ export async function listAccomplishments(
     else skippedInvalid++;
   }
   const matching = valid
-    .filter((r) => since === undefined || (r.value.endDate ?? r.value.startDate) >= since)
+    // Locked records have no dates, so a month filter never hides them.
+    .filter((r) => since === undefined || r.value.done === false || (r.value.endDate ?? r.value.startDate ?? "") >= since)
     .sort((a, b) => compareAccomplishments(a.value, b.value));
 
   return { ok: true, value: { items: matching.slice(0, limit ?? DEFAULT_LIMIT), total: matching.length, skippedInvalid } };
 }
 
 export async function addAccomplishment(env: Env, input: AddInput): Promise<Result<AddValue>> {
-  const result = validateAccomplishment({
-    $type: NSID,
-    title: input.title,
-    description: input.description,
-    startDate: input.startDate,
-    ...(input.endDate !== undefined && { endDate: input.endDate }),
-    ...(input.tags !== undefined && { tags: input.tags }),
-    ...(input.links !== undefined && { links: input.links }),
-    createdAt: new Date().toISOString(),
-  });
+  const result = validateAccomplishment(
+    {
+      $type: NSID,
+      title: input.title,
+      description: input.description,
+      funTitle: input.funTitle,
+      shortDescription: input.shortDescription,
+      icon: input.icon,
+      ...(input.done !== undefined && { done: input.done }),
+      ...(input.startDate !== undefined && { startDate: input.startDate }),
+      ...(input.endDate !== undefined && { endDate: input.endDate }),
+      ...(input.tags !== undefined && { tags: input.tags }),
+      ...(input.links !== undefined && { links: input.links }),
+      createdAt: new Date().toISOString(),
+    },
+    { mode: "write" },
+  );
   if (!result.ok) return { ok: false, kind: "invalid", errors: result.errors };
 
   const created = await withPds(env, ({ agent, identity }) =>
@@ -152,6 +179,69 @@ export async function addAccomplishment(env: Env, input: AddInput): Promise<Resu
     ok: true,
     value: { rkey: rkeyOf(created.data.uri), uri: created.data.uri, cid: created.data.cid, record: result.value, rebuild },
   };
+}
+
+/**
+ * Changes a record in place. Every field the patch doesn't name stays as
+ * stored, `null` removes a field, and `createdAt` never changes. `swapRecord`
+ * makes a concurrent change fail with `conflict` instead of being overwritten.
+ */
+export async function updateAccomplishment(
+  env: Env,
+  rkey: string,
+  patch: Record<string, unknown>,
+): Promise<Result<UpdateValue>> {
+  if (!TID.test(rkey)) {
+    return { ok: false, kind: "bad_request", message: "rkey must be a valid record key (a 13-character TID)." };
+  }
+  if (typeof patch !== "object" || patch === null || Array.isArray(patch) || Object.keys(patch).length === 0) {
+    return { ok: false, kind: "bad_request", message: "Nothing to update." };
+  }
+  const unknown = Object.keys(patch).filter((k) => !ADD_FIELDS.has(k) && !IGNORED_FIELDS.has(k));
+  if (unknown.length > 0) {
+    return { ok: false, kind: "invalid", errors: unknown.map((field) => ({ field, message: "is not a known field" })) };
+  }
+
+  const updated = await withPds(env, async ({ agent, identity }): Promise<Result<Omit<UpdateValue, "rebuild">>> => {
+    let existing;
+    try {
+      existing = await agent.com.atproto.repo.getRecord({ repo: identity.did, collection: NSID, rkey });
+    } catch (error) {
+      if (isRecordNotFound(error)) return { ok: false, kind: "not_found", message: `Not found: no accomplishment with rkey ${rkey}.` };
+      throw error;
+    }
+
+    const merged: Record<string, unknown> = { ...(existing.data.value as Record<string, unknown>) };
+    for (const [field, value] of Object.entries(patch)) {
+      if (IGNORED_FIELDS.has(field)) continue;
+      if (value === null) delete merged[field];
+      else merged[field] = value;
+    }
+    const result = validateAccomplishment(merged, { mode: "write" });
+    if (!result.ok) return { ok: false, kind: "invalid", errors: result.errors };
+
+    let put;
+    try {
+      put = await agent.com.atproto.repo.putRecord({
+        repo: identity.did,
+        collection: NSID,
+        rkey,
+        record: result.value as unknown as Record<string, unknown>,
+        swapRecord: existing.data.cid,
+        validate: false, // the PDS doesn't know this Lexicon
+      });
+    } catch (error) {
+      if (isInvalidSwap(error)) {
+        return { ok: false, kind: "conflict", message: "The record changed while updating. Try again." };
+      }
+      throw error;
+    }
+    return { ok: true, value: { rkey, uri: put.data.uri, cid: put.data.cid, record: result.value } };
+  });
+  if (!updated.ok) return updated;
+
+  const rebuild = await triggerRebuild(env);
+  return { ok: true, value: { ...updated.value, rebuild } };
 }
 
 export async function deleteAccomplishment(env: Env, rkey: string): Promise<Result<DeleteValue>> {
