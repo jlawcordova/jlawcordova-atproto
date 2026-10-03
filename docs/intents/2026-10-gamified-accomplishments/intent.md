@@ -128,8 +128,10 @@ None. Details are in [`spec.md`](spec.md).
    (shared 62, mcp 74, cli 44), `npm run typecheck` is clean, and
    `node --test "scripts/*.test.mjs"` passes 6 of 6. That covers V1 to V10,
    U1 to U13, C1 to C4 and M1 to M3. The fixture holds no real record
-   text: checked against the live `list` output. Not verified yet: S1 to
-   S6 (S2 is the owner's review of sample drafts; the rest need a real run
-   after step 8), C5, D1, D2 and M4.
+   text: checked against the live `list` output. S2 passed on 2026-10-04:
+   the owner approved drafts for the nine real records and a goal, and kept
+   the skill's two added rules (future-tense goals, an optional new
+   description on marking done). Not verified yet: S1, S3 to S6 (need a
+   real run after step 8), C5, D1, D2 and M4.
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
