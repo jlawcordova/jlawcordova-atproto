@@ -145,7 +145,22 @@ None. Details are in [`spec.md`](spec.md).
    passed: compared with a snapshot taken just before, every record gained
    exactly its approved `funTitle`, `shortDescription` and `icon` and no
    other field changed, and a rerun of the dry run found 0 to update. The
-   migration script and its test are deleted. Not verified yet: S1, S3 to
-   S6 (real skill runs).
+   migration script and its test are deleted. S1 passed on 2026-10-04 in a real
+   run: each draft in the selector showed a fun title, a short description
+   with its word count and an icon from the fetched list, then the plain
+   title; of two drafts only the chosen one was saved (`3mwz2zhj3zi2w`).
+   S3 passed on 2026-10-04: "add a goal: …" drafted a record with
+   `done: false`, no dates, a future-tense description and the three new
+   fields, showed every field, and saved it (`3mwz363debb2r`) only after
+   approval; `list` returns it first. S6 passed on 2026-10-04: a headless
+   run with CLI 1.0.0 from the release first on PATH stopped at preflight,
+   saying the CLI is older than 1.1.0 (usage lacks `update`) and to install
+   the latest release, with nothing gathered or drafted. S5 passed on
+   2026-10-04: after the site's PR 3 (jlawcordova.github.io#60) merged, a
+   drafting run offered "Mark done: Level Up" with month 2026-10 and a
+   past-tense description, and on that choice ran `update` on
+   `3mwz363debb2r`, which kept its rkey and `createdAt`. Not verified yet:
+   S4 (needs a goal more than 14 days old; `3mwz3f24erc2t` qualifies from
+   2026-10-17 if still locked).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
