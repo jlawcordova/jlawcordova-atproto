@@ -155,7 +155,12 @@ None. Details are in [`spec.md`](spec.md).
    approval; `list` returns it first. S6 passed on 2026-10-04: a headless
    run with CLI 1.0.0 from the release first on PATH stopped at preflight,
    saying the CLI is older than 1.1.0 (usage lacks `update`) and to install
-   the latest release, with nothing gathered or drafted. Not verified yet:
-   S4 (needs a goal more than 14 days old) and S5 (after the site's PR 3).
+   the latest release, with nothing gathered or drafted. S5 passed on
+   2026-10-04: after the site's PR 3 (jlawcordova.github.io#60) merged, a
+   drafting run offered "Mark done: Level Up" with month 2026-10 and a
+   past-tense description, and on that choice ran `update` on
+   `3mwz363debb2r`, which kept its rkey and `createdAt`. Not verified yet:
+   S4 (needs a goal more than 14 days old; `3mwz3f24erc2t` qualifies from
+   2026-10-17 if still locked).
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
