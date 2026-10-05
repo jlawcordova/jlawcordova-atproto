@@ -5,29 +5,8 @@ My career accomplishments, kept as records in my own
 a chat thread. They're public, typed and portable, and my portfolio at
 <https://jlawcordova.com> reads them straight from the repo.
 
-I write to them from Claude. A Claude Code skill drafts accomplishments from
+I write to them from Claude: a Claude Code skill drafts accomplishments from
 my recent GitHub activity, I pick which to keep, and a small CLI saves them.
-
-```mermaid
-flowchart LR
-    Skill["accomplishments skill<br/>(Claude Code)"] --> CLI["accomplishments CLI"]
-    CLI --> Worker["MCP server<br/>(Cloudflare Worker)"]
-    Claude["Claude (MCP client)"] --> Worker
-    Worker --> PDS["AT Protocol repo<br/>(my PDS)"]
-    PDS --> Site["jlawcordova.com"]
-    Worker -. "rebuild on change" .-> Site
-```
-
-## What's in this repo
-
-| Path | What it is |
-| --- | --- |
-| [`lexicons/`](lexicons) | The `com.jlawcordova.profile.accomplishment` record schema. |
-| [`shared/`](shared) | The TypeScript validator for the record, shared by the Worker and the CLI. |
-| [`jlawcordova-mcp/`](jlawcordova-mcp) | The MCP server (a Cloudflare Worker) that lists, adds, updates and deletes records. Only I can write. |
-| [`jlawcordova-cli/`](jlawcordova-cli) | The `accomplishments` command. It signs in with GitHub and calls the Worker. |
-| [`.claude/skills/accomplishments/`](.claude/skills/accomplishments) | The Claude Code skill that drafts accomplishments and saves the ones I pick. |
-| [`docs/`](docs) | Setup guides and the [intents](docs/intents/README.md) that drove the work. |
 
 ## Install the CLI and skill
 
@@ -89,6 +68,29 @@ Update both together. The skill checks the CLI version and stops if it's too
 old for what it needs. If you linked the skill from a clone instead of
 unzipping it, `git pull` updates it, and `rm` the link before unzipping or the
 zip writes into the clone.
+
+## How it works
+
+```mermaid
+flowchart LR
+    Skill["accomplishments skill<br/>(Claude Code)"] --> CLI["accomplishments CLI"]
+    CLI --> Worker["MCP server<br/>(Cloudflare Worker)"]
+    Claude["Claude (MCP client)"] --> Worker
+    Worker --> PDS["AT Protocol repo<br/>(my PDS)"]
+    PDS --> Site["jlawcordova.com"]
+    Worker -. "rebuild on change" .-> Site
+```
+
+## What's in this repo
+
+| Path | What it is |
+| --- | --- |
+| [`lexicons/`](lexicons) | The `com.jlawcordova.profile.accomplishment` record schema. |
+| [`shared/`](shared) | The TypeScript validator for the record, shared by the Worker and the CLI. |
+| [`jlawcordova-mcp/`](jlawcordova-mcp) | The MCP server (a Cloudflare Worker) that lists, adds, updates and deletes records. Only I can write. |
+| [`jlawcordova-cli/`](jlawcordova-cli) | The `accomplishments` command. It signs in with GitHub and calls the Worker. |
+| [`.claude/skills/accomplishments/`](.claude/skills/accomplishments) | The Claude Code skill that drafts accomplishments and saves the ones I pick. |
+| [`docs/`](docs) | Setup guides and the [intents](docs/intents/README.md) that drove the work. |
 
 ## Learn more
 
