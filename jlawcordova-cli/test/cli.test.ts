@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
 import { run, type Deps } from "../src/cli.ts";
+import pkg from "../package.json" with { type: "json" };
 
 const TOKEN = "gho_fakeCliTestToken0123456789abcdef";
 const KEYCHAIN_TOKEN = "gho_fakeKeychainToken0123456789abc";
@@ -43,16 +44,21 @@ interface Outcome {
   stdout: string;
   stderr: string;
   keychainReads: number;
+  stdinReads: number;
 }
 
 async function cli(argv: string[], opts: { stdin?: string; env?: Record<string, string>; keychain?: string } = {}): Promise<Outcome> {
   let stdout = "";
   let stderr = "";
   let keychainReads = 0;
+  let stdinReads = 0;
   const deps: Deps = {
     env: { ACCOMPLISHMENTS_URL: origin, ACCOMPLISHMENTS_TOKEN: TOKEN, ...opts.env },
     fetch,
-    readStdin: async () => opts.stdin ?? "",
+    readStdin: async () => {
+      stdinReads++;
+      return opts.stdin ?? "";
+    },
     readKeychainToken: async () => {
       keychainReads++;
       return opts.keychain;
@@ -65,7 +71,7 @@ async function cli(argv: string[], opts: { stdin?: string; env?: Record<string, 
     stderr: (t) => (stderr += t),
   };
   const code = await run(argv, deps);
-  return { code, stdout, stderr, keychainReads };
+  return { code, stdout, stderr, keychainReads, stdinReads };
 }
 
 const record = {
@@ -296,6 +302,31 @@ describe("usage", () => {
       expect(out.stdout).toBe("");
     }
     expect(seen).toHaveLength(0);
+  });
+
+  it("B3: --version prints the package version and needs no token, stdin or request; with another argument it exits 2", async () => {
+    const out = await cli(["--version"], { stdin: "{}", keychain: KEYCHAIN_TOKEN });
+    expect(out.code).toBe(0);
+    expect(JSON.parse(out.stdout)).toEqual({ version: pkg.version });
+    expect(out.stderr).toBe("");
+    expect(out.keychainReads).toBe(0);
+    expect(out.stdinReads).toBe(0);
+
+    for (const argv of [["--version", "list"], ["--version", "--help"]]) {
+      const bad = await cli(argv);
+      expect(bad.code, argv.join(" ")).toBe(2);
+      expect(bad.stdout).toBe("");
+      expect(bad.stderr).toContain("Usage:");
+      expect(bad.keychainReads).toBe(0);
+    }
+    expect(seen).toHaveLength(0);
+  });
+
+  it("B4: usage text lists --version, and --help still exits 2", async () => {
+    const out = await cli(["--help"]);
+    expect(out.code).toBe(2);
+    expect(out.stderr).toContain("accomplishments --version");
+    expect(out.stdout).toBe("");
   });
 });
 

@@ -138,7 +138,7 @@ work and CI run the same command.
 {
   "version": "2.0.0",
   "scripts": {
-    "build": "bun build --compile --minify --target=bun-darwin-arm64 src/main.ts --outfile dist/accomplishments-darwin-arm64",
+    "build": "bun build --compile --minify --target=bun-darwin-arm64 src/main.ts --outfile dist/accomplishments-darwin-arm64 && rm -f .*.bun-build",
     "test": "bun test",
     "typecheck": "bun --bun tsc --noEmit"
   }
@@ -151,6 +151,11 @@ work and CI run the same command.
 - `main.ts`'s shebang becomes `#!/usr/bin/env bun`, so `bun src/main.ts` and
   `./src/main.ts` both run the source in development. The compiled binary
   ignores it.
+- Every `--compile` leaves a 62 MB `.<hash>.bun-build` temp file in the
+  working directory (Bun 1.4.2, a known issue:
+  [oven-sh/bun#14020](https://github.com/oven-sh/bun/issues/14020)). The
+  build script deletes it, and `.gitignore` has `*.bun-build` in case a
+  build is interrupted.
 - No `--bytecode`: it emits CommonJS, which can't hold `main.ts`'s top-level
   `await` (checked: the build fails).
 - The output is only for Apple Silicon Macs. Bun signs it ad hoc, which is
@@ -183,8 +188,9 @@ work and CI run the same command.
 
 P1 and P2 tested the `tsc` build and the npm tarball, which no longer exist.
 They're replaced by B1 and B2 (section 8), in the same file. Both run only on
-macOS (`describe.skipIf(process.platform !== "darwin")`), because the binary
-only runs there. They build into a temporary directory, not `dist/`.
+Apple Silicon (`describe.skipIf`), because the binary only runs there. B1
+runs the package's real `bun run build`, so it tests the release's own
+command, and writes to `dist/`, which is ignored.
 
 ### 5.4 Development install
 
@@ -283,7 +289,7 @@ decision).
 
 | # | Test |
 | --- | --- |
-| B1 | `bun run build` writes an arm64 Mach-O executable whose `codesign --verify --strict` passes |
+| B1 | `bun run build` writes an arm64 Mach-O executable whose `codesign --verify --strict` passes, and leaves no `.bun-build` file behind |
 | B2 | That binary, run with only `PATH=/usr/bin:/bin`: `--help` exits 2 with usage on stderr; `--version` prints `{"version": <package.json version>}` and exits 0; `list` with `ACCOMPLISHMENTS_TOKEN` set and an unreachable `ACCOMPLISHMENTS_URL` exits 4 |
 | B3 | `run(["--version"])` prints the version JSON, exits 0, and reads no token or stdin and calls no `fetch`; `--version` with another argument exits 2 and calls nothing |
 | B4 | The usage text lists `--version`, and `--help` still exits 2 |

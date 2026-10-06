@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 import { run } from "./cli.ts";
 import { execFile } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
