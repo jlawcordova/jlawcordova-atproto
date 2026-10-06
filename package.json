@@ -1,13 +1,14 @@
 {
   "name": "jlawcordova-atproto",
   "private": true,
+  "packageManager": "bun@1.4.2",
   "workspaces": [
     "shared",
     "jlawcordova-mcp",
     "jlawcordova-cli"
   ],
   "scripts": {
-    "test": "npm test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "test": "bun run --filter '*' test",
+    "typecheck": "bun run --filter '*' typecheck"
   }
 }

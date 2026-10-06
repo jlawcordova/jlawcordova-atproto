@@ -11,7 +11,7 @@ afterAll(() => rmSync(outDir, { recursive: true, force: true }));
 
 describe("package", () => {
   it("P1: the build writes JavaScript with .js imports and keeps main.js's shebang", () => {
-    execFileSync("npx", ["tsc", "-p", "tsconfig.build.json", "--outDir", outDir], { cwd: PACKAGE_DIR });
+    execFileSync("bunx", ["tsc", "-p", "tsconfig.build.json", "--outDir", outDir], { cwd: PACKAGE_DIR });
     const files = readdirSync(outDir).sort();
     expect(files).toEqual(["api.js", "cli.js", "keychain.js", "login.js", "main.js"]);
     for (const file of files) {
