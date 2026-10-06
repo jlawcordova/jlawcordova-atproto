@@ -52,10 +52,15 @@ No connectors are needed. You need:
   and signed in as `jlawcordova`. The skill checks this and stops if it's older.
 
 Both come from the latest
-[release](https://github.com/jlawcordova/jlawcordova-atproto/releases):
+[release](https://github.com/jlawcordova/jlawcordova-atproto/releases). The
+CLI is one executable for Apple Silicon Macs; add `~/.local/bin` to your
+`PATH` if it isn't there, and if you installed 1.x with npm, run
+`npm uninstall -g jlawcordova-cli` first:
 
 ```sh
-npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz
+mkdir -p ~/.local/bin
+curl -fsSL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-darwin-arm64 -o ~/.local/bin/accomplishments
+chmod +x ~/.local/bin/accomplishments
 curl -sL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-skill.zip -o /tmp/accomplishments-skill.zip
 unzip -o /tmp/accomplishments-skill.zip -d ~/.claude/skills
 accomplishments login

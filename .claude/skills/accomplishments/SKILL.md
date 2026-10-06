@@ -31,14 +31,15 @@ failure. Exit codes: 0 success, 1 the API refused or failed, 2 bad usage,
 - Run `accomplishments list --limit 1`.
   - Exit 3: tell J. Law to run `accomplishments login` and stop.
   - Command not found: say to install it with
-    `npm install -g https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-cli.tgz`
-    (Node 22 or later; `docs/cli-setup.md` in that repo has the details),
-    then run `accomplishments login`, and stop.
+    `mkdir -p ~/.local/bin && curl -fsSL https://github.com/jlawcordova/jlawcordova-atproto/releases/latest/download/accomplishments-darwin-arm64 -o ~/.local/bin/accomplishments && chmod +x ~/.local/bin/accomplishments`
+    (an Apple Silicon Mac, with `~/.local/bin` on the `PATH`;
+    `docs/cli-setup.md` in that repo has the details), then run
+    `accomplishments login`, and stop.
   - Exit 4: the Worker can't be reached. Say so and stop.
 - Run `accomplishments --help`. It exits 2, which is expected here; read the
   usage text, which it prints on stderr. If it doesn't list `update`, the CLI is older than 1.1.0: say to
-  install CLI 1.1.0 from the latest release (the `npm install -g` command
-  above) and stop.
+  remove the old npm install with `npm uninstall -g jlawcordova-cli`, install
+  the latest release with the `curl` command above, and stop.
 - Run `gh auth status` to find the active GitHub account. Name that account in
   the report. Any account is fine to read from: work and personal accounts
   can describe the same work, and J. Law accepts or edits every draft.

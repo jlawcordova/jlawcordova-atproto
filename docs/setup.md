@@ -133,10 +133,16 @@ PUBLIC_URL=http://localhost:8788
 `GITHUB_CLIENT_ID` and `PUBLIC_URL` override the production values in
 `wrangler.jsonc`. The other vars come from `wrangler.jsonc` as they are.
 
+Install with `bun install` at the repo root, then run the Worker locally from
+`jlawcordova-mcp/` with `bun run dev`. It serves on port 8788. This is the
+one command in the repo that needs **Node** as well as Bun: `wrangler dev`
+starts on Bun but its requests hang, so the script runs it on Node
+([spec section 3](intents/2026-10-bun/spec.md#3-which-runtime-runs-what)).
+
 ## Part B: Cloudflare (needs the step 2 Worker)
 
-Run these from `jlawcordova-mcp/`. Sign in once with `npx wrangler login`, and
-check the account with `npx wrangler whoami`.
+Run these from `jlawcordova-mcp/`. Sign in once with `bunx wrangler login`, and
+check the account with `bunx wrangler whoami`.
 
 ### B1. KV namespace
 
@@ -157,7 +163,7 @@ looks for.
 ### B2. First deploy
 
 ```sh
-npx wrangler deploy
+bun run deploy
 ```
 
 The output prints the Worker's URL. Check that:
@@ -177,10 +183,10 @@ Each command prompts for the value, so the value stays out of your shell
 history. Use the **production** OAuth App.
 
 ```sh
-npx wrangler secret put GITHUB_CLIENT_SECRET
-npx wrangler secret put BSKY_APP_PASSWORD
-npx wrangler secret put GH_DISPATCH_TOKEN
-npx wrangler secret list
+bunx wrangler secret put GITHUB_CLIENT_SECRET
+bunx wrangler secret put BSKY_APP_PASSWORD
+bunx wrangler secret put GH_DISPATCH_TOKEN
+bunx wrangler secret list
 ```
 
 `secret list` should show exactly these three names. It never shows values.
@@ -196,9 +202,9 @@ them: a secret and a var can't share a name, and the Worker no longer reads
 the cookie key.
 
 ```sh
-npx wrangler secret delete GITHUB_CLIENT_ID
-npx wrangler secret delete BSKY_IDENTIFIER
-npx wrangler secret delete COOKIE_ENCRYPTION_KEY
+bunx wrangler secret delete GITHUB_CLIENT_ID
+bunx wrangler secret delete BSKY_IDENTIFIER
+bunx wrangler secret delete COOKIE_ENCRYPTION_KEY
 ```
 
 ### B4. Smoke test
@@ -217,7 +223,7 @@ Adding and deleting a real record is E1–E3, after the portfolio PR (step 4).
 
 After the first deploy, `.github/workflows/deploy-mcp.yml` deploys the Worker
 on every push to `main` that touches it (`jlawcordova-mcp/`, `shared/`,
-`lexicons/`, or the root npm files). It can also be run by hand from the
+`lexicons/`, or the root `package.json` and `bun.lock`). It can also be run by hand from the
 **Actions** tab. Pull requests run the tests and a dry-run bundle but don't
 deploy.
 
