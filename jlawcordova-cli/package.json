@@ -7,15 +7,14 @@
     "accomplishments": "dist/main.js"
   },
   "scripts": {
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "typecheck": "bun --bun tsc --noEmit",
     "build": "tsc -p tsconfig.build.json",
     "prepare": "npm run build"
   },
   "devDependencies": {
-    "@types/node": "22.20.4",
-    "typescript": "7.0.2",
-    "vitest": "4.1.11"
+    "@types/bun": "1.4.2",
+    "typescript": "7.0.2"
   },
   "files": [
     "dist"
