@@ -148,6 +148,16 @@ None. Details go in [`spec.md`](spec.md).
    tests in [`spec.md`](spec.md) — done.
 3. **Plan** — the build order in [`spec.md`](spec.md#9-build-order) —
    done.
-4. **Implement & verify** — not started.
+4. **Implement & verify** — in progress. Build steps 1 to 5 are in #26, one
+   commit per step. Locally on Bun 1.4.2: `bun install --frozen-lockfile`,
+   `bun run typecheck` and `bun run test` pass (shared 62, CLI 46, Worker
+   74), and a planted type error or failing test makes them exit 1 (W1 to
+   W3). With no Node on the `PATH`, a fresh install, typecheck, test and the
+   Worker's dry run pass (W4). `bun run dev` on Node answers 401 with no
+   token (W5). Bun's version is only in `packageManager` (W6, CI not seen
+   yet), and the test diff is imports and the `fetch` fake types (W7). B1
+   to B5 pass; B5 was copied to a scratch folder, not `~/.local/bin`. F2,
+   K1 and K2 pass. Not verified yet: F1 (the PR's checks), F3 to F5 and D1
+   to D3.
 5. **Deploy & operate** — not started.
 6. **Close** — not started.
