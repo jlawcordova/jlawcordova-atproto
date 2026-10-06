@@ -1,7 +1,8 @@
 name: Release the accomplishments CLI and skill
 
-# Pushing a tag like cli-v1.0.0 publishes one GitHub Release with the CLI
-# package and the skill zip (spec section 4.7).
+# Pushing a tag like cli-v2.0.0 publishes one GitHub Release with the CLI
+# binary for Apple Silicon Macs and the skill zip
+# (docs/intents/2026-10-bun/spec.md section 6.2).
 on:
   push:
     tags: ["cli-v*"]
@@ -15,24 +16,25 @@ concurrency:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # Apple Silicon, so the binary is built and smoke-tested where it runs.
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Set up Node
-        uses: actions/setup-node@v7
+      # The Bun version comes from packageManager in the root package.json.
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: 22
-          cache: npm
+          bun-version-file: package.json
 
       # Guards: nothing below runs unless the tag matches the package version
       # and the tagged commit is on main.
       - name: Check the tag matches the CLI version
         run: |
           version="${GITHUB_REF_NAME#cli-v}"
-          package_version="$(node -p "require('./jlawcordova-cli/package.json').version")"
+          package_version="$(bun -p "require('./jlawcordova-cli/package.json').version")"
           if [ "$version" != "$package_version" ]; then
             echo "::error::Tag $GITHUB_REF_NAME doesn't match jlawcordova-cli version $package_version."
             exit 1
@@ -46,18 +48,19 @@ jobs:
             exit 1
           fi
 
-      # `npm ci` runs the CLI's prepare script, which builds dist/.
       - name: Install
-        run: npm ci
+        run: bun install --frozen-lockfile
       - name: Typecheck
-        run: npm run typecheck
+        run: bun run typecheck
+      # Includes B1 and B2, which build the binary and run it.
       - name: Test
-        run: npm test
+        run: bun run test
 
-      - name: Pack the CLI
+      - name: Build the CLI
         run: |
-          npm pack -w jlawcordova-cli --pack-destination "$RUNNER_TEMP"
-          mv "$RUNNER_TEMP/jlawcordova-cli-$VERSION.tgz" "$RUNNER_TEMP/accomplishments-cli.tgz"
+          bun run --filter jlawcordova-cli build
+          codesign --verify --strict jlawcordova-cli/dist/accomplishments-darwin-arm64
+          cp jlawcordova-cli/dist/accomplishments-darwin-arm64 "$RUNNER_TEMP/accomplishments-darwin-arm64"
       - name: Zip the skill
         working-directory: .claude/skills
         run: |
@@ -65,18 +68,20 @@ jobs:
           unzip -l "$RUNNER_TEMP/accomplishments-skill.zip" | grep -q " accomplishments/SKILL.md$"
           unzip -l "$RUNNER_TEMP/accomplishments-skill.zip" | grep -q " accomplishments/README.md$"
 
-      # Installs the tarball the way a user would, so the command runs from
-      # node_modules. There's no keychain here, so `list` must stop at exit 3;
-      # the unreachable URL turns any request into exit 4 instead.
+      # Installs the binary the way a user would and runs it with no Bun or
+      # Node reachable. The runner's keychain has no token, so `list` must
+      # stop at exit 3; the unreachable URL turns any request into exit 4.
       - name: Smoke test the installed CLI
-        env:
-          ACCOMPLISHMENTS_URL: http://127.0.0.1:9
         run: |
-          prefix="$RUNNER_TEMP/prefix"
-          npm install -g --prefix "$prefix" "$RUNNER_TEMP/accomplishments-cli.tgz"
-          status=0; "$prefix/bin/accomplishments" --help || status=$?
+          bin="$RUNNER_TEMP/bin"
+          mkdir -p "$bin"
+          cp "$RUNNER_TEMP/accomplishments-darwin-arm64" "$bin/accomplishments"
+          chmod +x "$bin/accomplishments"
+          bare() { env -i PATH=/usr/bin:/bin HOME="$HOME" ACCOMPLISHMENTS_URL=http://127.0.0.1:9 "$bin/accomplishments" "$@"; }
+          status=0; bare --help || status=$?
           [ "$status" -eq 2 ] || { echo "::error::--help exited $status, expected 2."; exit 1; }
-          status=0; "$prefix/bin/accomplishments" list || status=$?
+          bare --version | grep -q "\"version\": \"$VERSION\"" || { echo "::error::--version didn't print $VERSION."; exit 1; }
+          status=0; bare list || status=$?
           [ "$status" -eq 3 ] || { echo "::error::list with no token exited $status, expected 3."; exit 1; }
 
       - name: Publish the release
@@ -84,7 +89,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "$RUNNER_TEMP/accomplishments-cli.tgz" \
+            "$RUNNER_TEMP/accomplishments-darwin-arm64" \
             "$RUNNER_TEMP/accomplishments-skill.zip" \
             --title "accomplishments $VERSION" \
             --generate-notes \
