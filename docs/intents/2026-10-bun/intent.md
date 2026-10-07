@@ -1,6 +1,6 @@
 # Intent: Move the repo to Bun
 
-> Status: Draft — Owner: J. Law Cordova — Date: 2026-10-07
+> Status: Closed — Owner: J. Law Cordova — Date: 2026-10-07
 
 ## Why
 
@@ -142,22 +142,51 @@ None. Details go in [`spec.md`](spec.md).
 
 ## AI-native SDLC
 
+All steps are done and the intent is closed.
+
 1. **Intent** (this document) — done.
 2. **Spec** — the package layout, scripts, test changes, the CLI build and
    `--version`, both workflows, the docs and skill changes, and acceptance
    tests in [`spec.md`](spec.md) — done.
 3. **Plan** — the build order in [`spec.md`](spec.md#9-build-order) —
    done.
-4. **Implement & verify** — in progress. Build steps 1 to 5 are in #26, one
+4. **Implement & verify** — done. Build steps 1 to 5 are in #26, one
    commit per step. Locally on Bun 1.4.2: `bun install --frozen-lockfile`,
    `bun run typecheck` and `bun run test` pass (shared 62, CLI 46, Worker
    74), and a planted type error or failing test makes them exit 1 (W1 to
    W3). With no Node on the `PATH`, a fresh install, typecheck, test and the
    Worker's dry run pass (W4). `bun run dev` on Node answers 401 with no
-   token (W5). Bun's version is only in `packageManager` (W6, CI not seen
-   yet), and the test diff is imports and the `fetch` fake types (W7). B1
-   to B5 pass; B5 was copied to a scratch folder, not `~/.local/bin`. F2,
-   K1 and K2 pass. Not verified yet: F1 (the PR's checks), F3 to F5 and D1
-   to D3.
-5. **Deploy & operate** — not started.
-6. **Close** — not started.
+   token (W5). Bun's version is only in `packageManager`, and CI installs it
+   from there (W6). The test diff is imports and the `fetch` fake types
+   (W7). B1 to B5 pass; B5 was copied to a scratch folder, not
+   `~/.local/bin`. F2, K1 and K2 pass. #26's checks passed (F1), and it
+   merged as `d2f8ebb`.
+5. **Deploy & operate** — done. The Worker deployed with Wrangler on
+   Bun in run 37552254433 (version `db4c1d1a`, bundle 2,309.52 KiB), so the
+   Node fallback in spec section 6.1 isn't needed. With no token, the API
+   answers 401 and `POST /mcp` answers 401 with the OAuth challenge. The
+   PDS still holds 12 records, the newest from 2026-10-03, so the deploy
+   changed none. D1 isn't verified: no snapshot of `list` was taken before
+   the deploy, and the stored CLI token is revoked (GitHub's `GET /user`
+   answers 401 with it, and the pre-Bun CLI on Node is refused the same
+   way), so `list` waits for a new `login`. F3 passed: `cli-v0.0.0` failed
+   the version guard on the macOS runner in run 37552516896 and published
+   nothing, and the tag was deleted. F4 passed: `cli-v2.0.0` released in run
+   37552589390 on macOS 26.6.2 with every step green and B1 and B2 run. F5
+   passed: the release holds only `accomplishments-darwin-arm64` and
+   `accomplishments-skill.zip`. From `releases/latest`, the binary has no
+   quarantine flag, its signature verifies, and it prints 2.0.0 with only
+   `/usr/bin:/bin` on the `PATH`; the zip matches the repo's skill. After
+   the owner removed the npm install, installed the release binary and ran
+   `login` again, D1 passed against the PDS instead of a before-snapshot:
+   `list --limit 100` returned 12 records, none skipped, each identical to
+   its record on the PDS. D2 passed: `which accomplishments` is
+   `~/.local/bin/accomplishments` (an interactive shell runs it too; a
+   dangling npm link in the fnm Node `bin` is skipped), and with no Node on
+   the `PATH` it prints 2.0.0 and `list` exits 0 with the keychain token. D3
+   passed: the skill ran on the binary, read `jlawcordova`'s past 7 days with
+   `gh`, offered four drafts, and saved only the two picked, "Travel Light"
+   (`3mxapwaoqsi2f`) and "Fresh Coat" (`3mxapwcb4h22t`), each with
+   `rebuild: "triggered"`.
+6. **Close** — this intent and the spec are **Closed** and the index is
+   updated — done.
