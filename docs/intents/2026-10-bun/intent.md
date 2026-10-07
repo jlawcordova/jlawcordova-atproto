@@ -174,6 +174,16 @@ None. Details go in [`spec.md`](spec.md).
    passed: the release holds only `accomplishments-darwin-arm64` and
    `accomplishments-skill.zip`. From `releases/latest`, the binary has no
    quarantine flag, its signature verifies, and it prints 2.0.0 with only
-   `/usr/bin:/bin` on the `PATH`; the zip matches the repo's skill. Not
-   verified yet: D1, D2 and D3.
+   `/usr/bin:/bin` on the `PATH`; the zip matches the repo's skill. After
+   the owner removed the npm install, installed the release binary and ran
+   `login` again, D1 passed against the PDS instead of a before-snapshot:
+   `list --limit 100` returned 12 records, none skipped, each identical to
+   its record on the PDS. D2 passed: `which accomplishments` is
+   `~/.local/bin/accomplishments` (an interactive shell runs it too; a
+   dangling npm link in the fnm Node `bin` is skipped), and with no Node on
+   the `PATH` it prints 2.0.0 and `list` exits 0 with the keychain token. D3
+   passed: the skill ran on the binary, read `jlawcordova`'s past 7 days with
+   `gh`, offered four drafts, and saved only the two picked, "Travel Light"
+   (`3mxapwaoqsi2f`) and "Fresh Coat" (`3mxapwcb4h22t`), each with
+   `rebuild: "triggered"`.
 6. **Close** — not started.
