@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "bun:test";
 import { run, type Deps } from "../src/cli.ts";
 
 const WORKER = "https://worker.test";
@@ -42,8 +42,8 @@ beforeEach(() => {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
 
-const fakeFetch: typeof fetch = async (input, init) => {
-  const req = new Request(input as string | URL | Request, init);
+const fakeFetch: Deps["fetch"] = async (input, init) => {
+  const req = new Request(input, init);
   const call: Call = { method: req.method, url: req.url, headers: req.headers, body: await req.clone().text() };
   calls.push(call);
   if (call.url === "https://github.com/login/device/code") return json(deviceCode);

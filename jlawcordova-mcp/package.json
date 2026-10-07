@@ -5,14 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --port 8788",
-    "deploy": "wrangler deploy",
-    "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "deploy": "bun --bun wrangler deploy",
+    "check": "bun --bun wrangler deploy --dry-run",
+    "test": "bun --bun vitest run",
+    "typecheck": "bun --bun tsc --noEmit"
   },
   "dependencies": {
     "@atproto/api": "0.22.0",
     "@cloudflare/workers-oauth-provider": "1.2.1",
-    "@jlawcordova/accomplishment": "0.1.0",
+    "@jlawcordova/accomplishment": "workspace:*",
     "@modelcontextprotocol/server": "2.0.0",
     "agents": "0.24.0",
     "zod": "4.6.5"

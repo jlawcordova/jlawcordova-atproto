@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "bun:test";
 import { storeKeychainToken, type RunWithStdin } from "../src/keychain.ts";
 
 const TOKEN = "gho_fakeKeychainWrite0123456789abcd";

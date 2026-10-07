@@ -1,6 +1,7 @@
 import { parseArgs } from "node:util";
 import { callApi, EXIT, fail, findToken, NEEDS_LOGIN, report, type Deps, type Request } from "./api.ts";
 import { login } from "./login.ts";
+import pkg from "../package.json" with { type: "json" };
 
 export type { Deps } from "./api.ts";
 
@@ -10,6 +11,7 @@ const USAGE = `Usage:
   accomplishments update <rkey>    (a JSON patch object on stdin)
   accomplishments delete <rkey>
   accomplishments login            (sign in with GitHub; once per machine)
+  accomplishments --version
 
 Prints JSON on stdout. Errors are JSON on stderr.
 Exit codes: 0 ok, 1 refused or failed, 2 bad usage, 3 not signed in, 4 network.
@@ -85,6 +87,15 @@ async function plan(argv: string[], deps: Deps): Promise<Request> {
 
 
 export async function run(argv: string[], deps: Deps): Promise<number> {
+  if (argv[0] === "--version") {
+    if (argv.length > 1) {
+      deps.stderr(`${JSON.stringify({ error: "usage", message: "--version takes no arguments." }, null, 2)}\n${USAGE}`);
+      return EXIT.usage;
+    }
+    deps.stdout(`${JSON.stringify({ version: pkg.version }, null, 2)}\n`);
+    return EXIT.ok;
+  }
+
   if (argv[0] === "login") {
     if (argv.length > 1) {
       deps.stderr(`${JSON.stringify({ error: "usage", message: "login takes no arguments." }, null, 2)}\n${USAGE}`);

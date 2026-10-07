@@ -5,7 +5,7 @@ export const EXIT = { ok: 0, refused: 1, usage: 2, auth: 3, network: 4 } as cons
 
 export interface Deps {
   env: Record<string, string | undefined>;
-  fetch: typeof fetch;
+  fetch: (url: string, init?: RequestInit) => Promise<Response>;
   readStdin: () => Promise<string>;
   readKeychainToken: () => Promise<string | undefined>;
   /** Saves the token to the keychain; throws if it couldn't be saved. */

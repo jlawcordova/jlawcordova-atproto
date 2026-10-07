@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2023"],
-    "types": ["node"],
+    "types": ["bun"],
     "resolveJsonModule": true,
     "strict": true,
     "noUncheckedIndexedAccess": true,

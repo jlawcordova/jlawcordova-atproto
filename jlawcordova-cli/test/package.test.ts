@@ -1,32 +1,45 @@
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { spawnSync } from "node:child_process";
+import { readdirSync } from "node:fs";
 import { join } from "node:path";
-import { afterAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "bun:test";
+import pkg from "../package.json" with { type: "json" };
 
 const PACKAGE_DIR = join(import.meta.dirname, "..");
-const outDir = mkdtempSync(join(tmpdir(), "accomplishments-build-"));
+const binary = join(PACKAGE_DIR, "dist", "accomplishments-darwin-arm64");
 
-afterAll(() => rmSync(outDir, { recursive: true, force: true }));
+// Only what a clean Mac has: no Bun, no Node.
+const BARE_PATH = "/usr/bin:/bin";
 
-describe("package", () => {
-  it("P1: the build writes JavaScript with .js imports and keeps main.js's shebang", () => {
-    execFileSync("npx", ["tsc", "-p", "tsconfig.build.json", "--outDir", outDir], { cwd: PACKAGE_DIR });
-    const files = readdirSync(outDir).sort();
-    expect(files).toEqual(["api.js", "cli.js", "keychain.js", "login.js", "main.js"]);
-    for (const file of files) {
-      const source = readFileSync(join(outDir, file), "utf8");
-      expect(source, file).not.toMatch(/from "\.[^"]*\.ts"/);
-    }
-    expect(readFileSync(join(outDir, "main.js"), "utf8").startsWith("#!/usr/bin/env node\n")).toBe(true);
-  }, 60_000);
+function runBinary(args: string[], env: Record<string, string> = {}) {
+  return spawnSync(binary, args, { env: { PATH: BARE_PATH, ...env }, encoding: "utf8", timeout: 30_000 });
+}
 
-  it("P2: the tarball holds only package.json and dist/", () => {
-    const [packed] = JSON.parse(
-      execFileSync("npm", ["pack", "--dry-run", "--json"], { cwd: PACKAGE_DIR, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }),
-    ) as { files: { path: string }[] }[];
-    const paths = packed!.files.map((f) => f.path).sort();
-    expect(paths).toContain("dist/main.js");
-    expect(paths.filter((p) => p !== "package.json" && !p.startsWith("dist/"))).toEqual([]);
-  }, 60_000);
+// The binary is built for Apple Silicon Macs only, so it can only run there.
+describe.skipIf(process.platform !== "darwin" || process.arch !== "arm64")("binary", () => {
+  let build: ReturnType<typeof spawnSync>;
+  beforeAll(() => {
+    build = spawnSync("bun", ["run", "build"], { cwd: PACKAGE_DIR, encoding: "utf8" });
+  }, 120_000);
+
+  it("B1: bun run build writes an arm64 Mach-O executable whose signature verifies, and leaves no .bun-build files", () => {
+    expect(build.status, String(build.stderr)).toBe(0);
+    expect(spawnSync("file", [binary], { encoding: "utf8" }).stdout).toContain("Mach-O 64-bit executable arm64");
+    const verify = spawnSync("codesign", ["--verify", "--strict", binary], { encoding: "utf8" });
+    expect(verify.status, verify.stderr).toBe(0);
+    expect(readdirSync(PACKAGE_DIR).filter((f) => f.endsWith(".bun-build"))).toEqual([]);
+  });
+
+  it("B2: with no Bun or Node on the PATH, --help exits 2, --version prints the version, and an unreachable URL exits 4", () => {
+    const help = runBinary(["--help"]);
+    expect(help.status).toBe(2);
+    expect(help.stderr).toContain("Usage:");
+
+    const version = runBinary(["--version"]);
+    expect(version.status).toBe(0);
+    expect(JSON.parse(version.stdout)).toEqual({ version: pkg.version });
+
+    const list = runBinary(["list"], { ACCOMPLISHMENTS_TOKEN: "gho_fakePackageTestToken0123456789", ACCOMPLISHMENTS_URL: "http://127.0.0.1:9" });
+    expect(list.status).toBe(4);
+    expect(JSON.parse(list.stderr).error).toBe("network");
+  });
 });
