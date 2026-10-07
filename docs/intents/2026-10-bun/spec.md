@@ -1,6 +1,6 @@
 # Spec: Move the repo to Bun
 
-> Status: Draft — Owner: J. Law Cordova — Date: 2026-10-07
+> Status: Closed — Owner: J. Law Cordova — Date: 2026-10-07
 
 Implements [`intent.md`](intent.md). Where they disagree, the intent wins and
 this spec gets fixed.
