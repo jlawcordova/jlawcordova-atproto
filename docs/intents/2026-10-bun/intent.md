@@ -154,10 +154,26 @@ None. Details go in [`spec.md`](spec.md).
    74), and a planted type error or failing test makes them exit 1 (W1 to
    W3). With no Node on the `PATH`, a fresh install, typecheck, test and the
    Worker's dry run pass (W4). `bun run dev` on Node answers 401 with no
-   token (W5). Bun's version is only in `packageManager` (W6, CI not seen
-   yet), and the test diff is imports and the `fetch` fake types (W7). B1
-   to B5 pass; B5 was copied to a scratch folder, not `~/.local/bin`. F2,
-   K1 and K2 pass. Not verified yet: F1 (the PR's checks), F3 to F5 and D1
-   to D3.
-5. **Deploy & operate** — not started.
+   token (W5). Bun's version is only in `packageManager`, and CI installs it
+   from there (W6). The test diff is imports and the `fetch` fake types
+   (W7). B1 to B5 pass; B5 was copied to a scratch folder, not
+   `~/.local/bin`. F2, K1 and K2 pass. #26's checks passed (F1), and it
+   merged as `d2f8ebb`.
+5. **Deploy & operate** — in progress. The Worker deployed with Wrangler on
+   Bun in run 37552254433 (version `db4c1d1a`, bundle 2,309.52 KiB), so the
+   Node fallback in spec section 6.1 isn't needed. With no token, the API
+   answers 401 and `POST /mcp` answers 401 with the OAuth challenge. The
+   PDS still holds 12 records, the newest from 2026-10-03, so the deploy
+   changed none. D1 isn't verified: no snapshot of `list` was taken before
+   the deploy, and the stored CLI token is revoked (GitHub's `GET /user`
+   answers 401 with it, and the pre-Bun CLI on Node is refused the same
+   way), so `list` waits for a new `login`. F3 passed: `cli-v0.0.0` failed
+   the version guard on the macOS runner in run 37552516896 and published
+   nothing, and the tag was deleted. F4 passed: `cli-v2.0.0` released in run
+   37552589390 on macOS 26.6.2 with every step green and B1 and B2 run. F5
+   passed: the release holds only `accomplishments-darwin-arm64` and
+   `accomplishments-skill.zip`. From `releases/latest`, the binary has no
+   quarantine flag, its signature verifies, and it prints 2.0.0 with only
+   `/usr/bin:/bin` on the `PATH`; the zip matches the repo's skill. Not
+   verified yet: D1, D2 and D3.
 6. **Close** — not started.
